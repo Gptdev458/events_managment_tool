@@ -1,10 +1,25 @@
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { logger } from '@/lib/logger'
+
+// Force this page to be dynamically rendered instead of statically generated
+export const dynamic = 'force-dynamic'
 
 async function getDashboardData() {
   try {
+    // Check if environment variables are available
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Supabase environment variables not found')
+      return {
+        totalContacts: 0,
+        totalEvents: 0,
+        totalPipeline: 0,
+        recentEvents: [],
+        connectionStatus: 'error',
+        errorMessage: 'Environment variables not configured'
+      }
+    }
+
     // Get counts for dashboard metrics
     const [contactsResult, eventsResult, pipelineResult] = await Promise.all([
       supabase.from('contacts').select('*', { count: 'exact', head: true }),
@@ -12,29 +27,52 @@ async function getDashboardData() {
       supabase.from('relationship_pipeline').select('*', { count: 'exact', head: true })
     ])
 
+    // Check for database errors
+    if (contactsResult.error || eventsResult.error || pipelineResult.error) {
+      console.error('Database query errors:', {
+        contacts: contactsResult.error,
+        events: eventsResult.error,
+        pipeline: pipelineResult.error
+      })
+      return {
+        totalContacts: 0,
+        totalEvents: 0,
+        totalPipeline: 0,
+        recentEvents: [],
+        connectionStatus: 'error',
+        errorMessage: 'Database tables not found or accessible'
+      }
+    }
+
     // Get recent events
-    const { data: recentEvents } = await supabase
+    const { data: recentEvents, error: eventsError } = await supabase
       .from('events')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(5)
+
+    if (eventsError) {
+      console.error('Recent events query error:', eventsError)
+    }
 
     return {
       totalContacts: contactsResult.count || 0,
       totalEvents: eventsResult.count || 0,
       totalPipeline: pipelineResult.count || 0,
       recentEvents: recentEvents || [],
-      connectionStatus: 'connected'
+      connectionStatus: 'connected',
+      errorMessage: null
     }
   } catch (error) {
-      // Log error for debugging
-      console.error('Dashboard data fetch error:', error)
+    // Log error for debugging
+    console.error('Dashboard data fetch error:', error)
     return {
       totalContacts: 0,
       totalEvents: 0,
       totalPipeline: 0,
       recentEvents: [],
-      connectionStatus: 'error'
+      connectionStatus: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
@@ -45,7 +83,7 @@ export default async function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Events Management Tool</h1>
         <p className="text-gray-600">Overview of your event management system</p>
       </div>
 
@@ -62,9 +100,24 @@ export default async function Dashboard() {
               <span className="text-green-700 font-medium">Connected to Supabase</span>
             </div>
           ) : (
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-red-500 rounded-full"></div>
-              <span className="text-red-700 font-medium">Connection Failed</span>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                <span className="text-red-700 font-medium">Connection Failed</span>
+              </div>
+              {data.errorMessage && (
+                <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                  Error: {data.errorMessage}
+                </p>
+              )}
+              <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded">
+                <strong>Setup Required:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>Create database tables in Supabase (see documentation)</li>
+                  <li>Verify environment variables are set correctly</li>
+                  <li>Check Supabase project status</li>
+                </ol>
+              </div>
             </div>
           )}
         </CardContent>
@@ -110,7 +163,9 @@ export default async function Dashboard() {
           <CardDescription>Latest events in your system</CardDescription>
         </CardHeader>
         <CardContent>
-          {data.recentEvents.length === 0 ? (
+          {data.connectionStatus === 'error' ? (
+            <p className="text-gray-500">Unable to load events. Please check your database connection.</p>
+          ) : data.recentEvents.length === 0 ? (
             <p className="text-gray-500">No events yet. Create your first event!</p>
           ) : (
             <div className="space-y-3">
@@ -130,6 +185,39 @@ export default async function Dashboard() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Get started with your event management</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a 
+              href="/contacts" 
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <h3 className="font-medium">Manage Contacts</h3>
+              <p className="text-sm text-gray-600">Add and organize your network</p>
+            </a>
+            <a 
+              href="/events" 
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <h3 className="font-medium">Create Events</h3>
+              <p className="text-sm text-gray-600">Plan and manage events</p>
+            </a>
+            <a 
+              href="/pipeline" 
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <h3 className="font-medium">Relationship Pipeline</h3>
+              <p className="text-sm text-gray-600">Track high-value connections</p>
+            </a>
+          </div>
         </CardContent>
       </Card>
     </div>
