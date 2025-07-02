@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ToolNavigation } from "@/components/tool-navigation";
 import { Navigation } from "@/components/navigation";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
         <ErrorBoundary>
+          <ToolNavigation />
           <Navigation />
           <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             {children}

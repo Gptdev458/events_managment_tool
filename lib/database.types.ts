@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       contacts: {
         Row: {
+          additional_emails: string[] | null
           company: string | null
           contact_type: string
           created_at: string | null
@@ -23,9 +24,9 @@ export type Database = {
           last_name: string | null
           linkedin_url: string | null
           name: string | null
-          additional_emails: string[] | null
         }
         Insert: {
+          additional_emails?: string[] | null
           company?: string | null
           contact_type: string
           created_at?: string | null
@@ -38,9 +39,9 @@ export type Database = {
           last_name?: string | null
           linkedin_url?: string | null
           name?: string | null
-          additional_emails?: string[] | null
         }
         Update: {
+          additional_emails?: string[] | null
           company?: string | null
           contact_type?: string
           created_at?: string | null
@@ -53,13 +54,13 @@ export type Database = {
           last_name?: string | null
           linkedin_url?: string | null
           name?: string | null
-          additional_emails?: string[] | null
         }
         Relationships: []
       }
       event_invitations: {
         Row: {
           contact_id: string
+          created_at: string | null
           event_id: string
           follow_up_notes: string | null
           id: number
@@ -69,6 +70,7 @@ export type Database = {
         }
         Insert: {
           contact_id: string
+          created_at?: string | null
           event_id: string
           follow_up_notes?: string | null
           id?: never
@@ -78,6 +80,7 @@ export type Database = {
         }
         Update: {
           contact_id?: string
+          created_at?: string | null
           event_id?: string
           follow_up_notes?: string | null
           id?: never
@@ -177,6 +180,178 @@ export type Database = {
           },
         ]
       }
+      vip_activities: {
+        Row: {
+          activity_date: string
+          contact_id: string
+          created_at: string
+          id: string
+          initiative_id: string | null
+          notes: string | null
+          summary: string
+          type: Database["public"]["Enums"]["vip_activity_type"]
+        }
+        Insert: {
+          activity_date?: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          initiative_id?: string | null
+          notes?: string | null
+          summary: string
+          type: Database["public"]["Enums"]["vip_activity_type"]
+        }
+        Update: {
+          activity_date?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          initiative_id?: string | null
+          notes?: string | null
+          summary?: string
+          type?: Database["public"]["Enums"]["vip_activity_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vip_activities_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "vip_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_contact_tags: {
+        Row: {
+          contact_id: string
+          tag_id: string
+        }
+        Insert: {
+          contact_id: string
+          tag_id: string
+        }
+        Update: {
+          contact_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_contact_tags_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vip_contact_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "vip_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_initiatives: {
+        Row: {
+          contact_id: string
+          created_at: string
+          description: string | null
+          id: string
+          status: Database["public"]["Enums"]["vip_initiative_status"]
+          title: string
+          type: Database["public"]["Enums"]["vip_initiative_type"]
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["vip_initiative_status"]
+          title: string
+          type: Database["public"]["Enums"]["vip_initiative_type"]
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["vip_initiative_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["vip_initiative_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_initiatives_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      vip_tasks: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          initiative_id: string
+          name: string
+          outcome_notes: string | null
+          status: Database["public"]["Enums"]["vip_task_status"]
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          initiative_id: string
+          name: string
+          outcome_notes?: string | null
+          status?: Database["public"]["Enums"]["vip_task_status"]
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          initiative_id?: string
+          name?: string
+          outcome_notes?: string | null
+          status?: Database["public"]["Enums"]["vip_task_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_tasks_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "vip_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -185,7 +360,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      vip_activity_type:
+        | "meeting"
+        | "call"
+        | "email"
+        | "event"
+        | "info_share"
+        | "future_touchpoint"
+      vip_initiative_status: "active" | "on_hold" | "completed" | "archived"
+      vip_initiative_type: "give" | "ask"
+      vip_task_status: "to_do" | "in_progress" | "done" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -268,7 +452,37 @@ export type TablesUpdate<
       : never
     : never
 
-// Convenience type aliases for easier usage
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+// Legacy type exports for existing code compatibility
 export type Contact = Tables<'contacts'>
 export type Event = Tables<'events'>
 export type EventInvitation = Tables<'event_invitations'>
@@ -282,4 +496,38 @@ export type RelationshipPipelineInsert = TablesInsert<'relationship_pipeline'>
 export type ContactUpdate = TablesUpdate<'contacts'>
 export type EventUpdate = TablesUpdate<'events'>
 export type EventInvitationUpdate = TablesUpdate<'event_invitations'>
-export type RelationshipPipelineUpdate = TablesUpdate<'relationship_pipeline'> 
+export type RelationshipPipelineUpdate = TablesUpdate<'relationship_pipeline'>
+
+// VIP table type exports
+export type VipTag = Tables<'vip_tags'>
+export type VipContactTag = Tables<'vip_contact_tags'>
+export type VipInitiative = Tables<'vip_initiatives'>
+export type VipTask = Tables<'vip_tasks'>
+export type VipActivity = Tables<'vip_activities'>
+
+export type VipTagInsert = TablesInsert<'vip_tags'>
+export type VipContactTagInsert = TablesInsert<'vip_contact_tags'>
+export type VipInitiativeInsert = TablesInsert<'vip_initiatives'>
+export type VipTaskInsert = TablesInsert<'vip_tasks'>
+export type VipActivityInsert = TablesInsert<'vip_activities'>
+
+export type VipTagUpdate = TablesUpdate<'vip_tags'>
+export type VipContactTagUpdate = TablesUpdate<'vip_contact_tags'>
+export type VipInitiativeUpdate = TablesUpdate<'vip_initiatives'>
+export type VipTaskUpdate = TablesUpdate<'vip_tasks'>
+export type VipActivityUpdate = TablesUpdate<'vip_activities'>
+
+// VIP enum types
+export type VipInitiativeType = Database['public']['Enums']['vip_initiative_type']
+export type VipInitiativeStatus = Database['public']['Enums']['vip_initiative_status']
+export type VipTaskStatus = Database['public']['Enums']['vip_task_status']
+export type VipActivityType = Database['public']['Enums']['vip_activity_type']
+
+// VIP Statistics interface
+export interface VipStats {
+  total_vips: number
+  active_give_initiatives: number
+  active_ask_initiatives: number
+  total_activities: number
+  recent_interactions: number
+} 

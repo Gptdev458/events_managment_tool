@@ -3,6 +3,7 @@
  */
 
 import { logger } from './logger'
+import { useMemo, useCallback } from 'react'
 
 interface PerformanceMetric {
   name: string
@@ -417,4 +418,67 @@ if (typeof window !== 'undefined') {
   MemoryMonitoring.startMemoryLeakDetection()
 }
 
-import React from 'react' 
+import React from 'react'
+
+// Stable empty arrays to prevent unnecessary re-renders
+export const EMPTY_ARRAY: any[] = []
+export const EMPTY_OBJECT = {}
+
+// Memoization helper for filtering arrays
+export function useFilteredArray<T>(
+  array: T[],
+  filterFn: (item: T) => boolean,
+  deps: any[] = []
+) {
+  return useMemo(() => array.filter(filterFn), [array, ...deps])
+}
+
+// Stable callback helper
+export function useStableCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  deps: any[]
+): T {
+  return useCallback(callback, deps)
+}
+
+// Batched updates helper
+export function batchUpdates<T>(updates: (() => T)[]): T[] {
+  return updates.map(update => update())
+}
+
+// Performance monitoring helpers
+export function measurePerformance<T>(
+  name: string,
+  fn: () => T
+): T {
+  const start = performance.now()
+  const result = fn()
+  const end = performance.now()
+  console.log(`${name} took ${end - start} milliseconds`)
+  return result
+}
+
+// Debounce helper for expensive operations
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): T {
+  let timeout: NodeJS.Timeout
+  return ((...args: any[]) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func.apply(null, args), wait)
+  }) as T
+}
+
+// React component memoization helpers
+export const memo = {
+  // Shallow comparison memo
+  shallow: <P extends object>(Component: React.ComponentType<P>) => 
+    React.memo(Component),
+  
+  // Deep comparison memo (use sparingly)
+  deep: <P extends object>(Component: React.ComponentType<P>) =>
+    React.memo(Component, (prevProps, nextProps) => {
+      return JSON.stringify(prevProps) === JSON.stringify(nextProps)
+    })
+} 
