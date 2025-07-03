@@ -12,6 +12,7 @@ export type Database = {
       contacts: {
         Row: {
           additional_emails: string[] | null
+          area: Database["public"]["Enums"]["contact_area"] | null
           company: string | null
           contact_type: string
           created_at: string | null
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           additional_emails?: string[] | null
+          area?: Database["public"]["Enums"]["contact_area"] | null
           company?: string | null
           contact_type: string
           created_at?: string | null
@@ -42,6 +44,7 @@ export type Database = {
         }
         Update: {
           additional_emails?: string[] | null
+          area?: Database["public"]["Enums"]["contact_area"] | null
           company?: string | null
           contact_type?: string
           created_at?: string | null
@@ -360,6 +363,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      contact_area: "engineering" | "founders" | "product"
       vip_activity_type:
         | "meeting"
         | "call"
@@ -516,6 +520,9 @@ export type VipContactTagUpdate = TablesUpdate<'vip_contact_tags'>
 export type VipInitiativeUpdate = TablesUpdate<'vip_initiatives'>
 export type VipTaskUpdate = TablesUpdate<'vip_tasks'>
 export type VipActivityUpdate = TablesUpdate<'vip_activities'>
+
+// Contact enum types
+export type ContactArea = Database['public']['Enums']['contact_area']
 
 // VIP enum types
 export type VipInitiativeType = Database['public']['Enums']['vip_initiative_type']

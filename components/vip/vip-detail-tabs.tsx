@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 
 // Dynamic imports for better performance
 const CreateInitiativeDialog = lazy(() => import('./create-initiative-dialog').then(module => ({ default: module.CreateInitiativeDialog })))
+const EditInitiativeDialog = lazy(() => import('./edit-initiative-dialog').then(module => ({ default: module.EditInitiativeDialog })))
 const CreateActivityDialog = lazy(() => import('./create-activity-dialog').then(module => ({ default: module.CreateActivityDialog })))
 const EditActivityDialog = lazy(() => import('./edit-activity-dialog').then(module => ({ default: module.EditActivityDialog })))
 const CreateTaskDialog = lazy(() => import('./create-task-dialog').then(module => ({ default: module.CreateTaskDialog })))
@@ -50,6 +51,8 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
   const [showEditActivityDialog, setShowEditActivityDialog] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<VipActivity | null>(null)
   const [showAddTagDialog, setShowAddTagDialog] = useState(false)
+  const [showEditInitiativeDialog, setShowEditInitiativeDialog] = useState(false)
+  const [selectedInitiative, setSelectedInitiative] = useState<VipInitiative | null>(null)
 
   // Memoized filtered initiatives to prevent unnecessary recalculations
   const giveInitiatives = useMemo(() => 
@@ -143,22 +146,30 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
         </TabsContent>
         
         <TabsContent value="give" className="mt-6">
-          <VipGiveInitiatives 
-            contact={contact} 
+          <VipGiveInitiatives
+            contact={contact}
             initiatives={giveInitiatives}
             allTasks={allTasks}
             onRefresh={refreshData}
             onCreateInitiative={() => setShowCreateGiveDialog(true)}
+            onEditInitiative={(initiative) => {
+              setSelectedInitiative(initiative)
+              setShowEditInitiativeDialog(true)
+            }}
           />
         </TabsContent>
-        
+
         <TabsContent value="ask" className="mt-6">
-          <VipAskInitiatives 
-            contact={contact} 
+          <VipAskInitiatives
+            contact={contact}
             initiatives={askInitiatives}
             allTasks={allTasks}
             onRefresh={refreshData}
             onCreateInitiative={() => setShowCreateAskDialog(true)}
+            onEditInitiative={(initiative) => {
+              setSelectedInitiative(initiative)
+              setShowEditInitiativeDialog(true)
+            }}
           />
         </TabsContent>
         
@@ -194,7 +205,14 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
           type="ask"
           onSuccess={refreshData}
         />
-        
+
+        <EditInitiativeDialog
+          open={showEditInitiativeDialog}
+          onOpenChange={setShowEditInitiativeDialog}
+          initiative={selectedInitiative}
+          onSuccess={refreshData}
+        />
+
         <CreateActivityDialog
           open={showCreateActivityDialog}
           onOpenChange={setShowCreateActivityDialog}
@@ -725,9 +743,10 @@ interface VipInitiativesProps {
   allTasks: VipTask[]
   onRefresh: () => void
   onCreateInitiative: () => void
+  onEditInitiative: (initiative: VipInitiative) => void
 }
 
-const VipGiveInitiatives = memo(function VipGiveInitiatives({ contact, initiatives, allTasks, onRefresh, onCreateInitiative }: VipInitiativesProps) {
+const VipGiveInitiatives = memo(function VipGiveInitiatives({ contact, initiatives, allTasks, onRefresh, onCreateInitiative, onEditInitiative }: VipInitiativesProps) {
 
   if (initiatives.length === 0) {
     return (
@@ -778,12 +797,13 @@ const VipGiveInitiatives = memo(function VipGiveInitiatives({ contact, initiativ
 
       <div className="space-y-4">
         {initiatives.map(initiative => (
-          <InitiativeCard 
-            key={initiative.id} 
-            initiative={initiative} 
+          <InitiativeCard
+            key={initiative.id}
+            initiative={initiative}
             type="give"
             tasks={allTasks.filter(task => task.initiative_id === initiative.id)}
             onRefresh={onRefresh}
+            onEditInitiative={onEditInitiative}
           />
         ))}
       </div>
@@ -791,7 +811,7 @@ const VipGiveInitiatives = memo(function VipGiveInitiatives({ contact, initiativ
   )
 })
 
-const VipAskInitiatives = memo(function VipAskInitiatives({ contact, initiatives, allTasks, onRefresh, onCreateInitiative }: VipInitiativesProps) {
+const VipAskInitiatives = memo(function VipAskInitiatives({ contact, initiatives, allTasks, onRefresh, onCreateInitiative, onEditInitiative }: VipInitiativesProps) {
 
   if (initiatives.length === 0) {
     return (
@@ -836,12 +856,13 @@ const VipAskInitiatives = memo(function VipAskInitiatives({ contact, initiatives
 
       <div className="space-y-4">
         {initiatives.map(initiative => (
-          <InitiativeCard 
-            key={initiative.id} 
-            initiative={initiative} 
+          <InitiativeCard
+            key={initiative.id}
+            initiative={initiative}
             type="ask"
             tasks={allTasks.filter(task => task.initiative_id === initiative.id)}
             onRefresh={onRefresh}
+            onEditInitiative={onEditInitiative}
           />
         ))}
       </div>
@@ -920,9 +941,10 @@ interface InitiativeCardProps {
   type: 'give' | 'ask'
   tasks: VipTask[]
   onRefresh: () => void
+  onEditInitiative: (initiative: VipInitiative) => void
 }
 
-const InitiativeCard = memo(function InitiativeCard({ initiative, type, tasks, onRefresh }: InitiativeCardProps) {
+const InitiativeCard = memo(function InitiativeCard({ initiative, type, tasks, onRefresh, onEditInitiative }: InitiativeCardProps) {
   const [showTasks, setShowTasks] = useState(false)
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false)
   const [showEditTaskDialog, setShowEditTaskDialog] = useState(false)
@@ -976,7 +998,11 @@ const InitiativeCard = memo(function InitiativeCard({ initiative, type, tasks, o
             >
               {showTasks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEditInitiative(initiative)}
+            >
               <Edit className="h-4 w-4" />
             </Button>
           </div>

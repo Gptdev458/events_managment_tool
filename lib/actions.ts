@@ -8,6 +8,7 @@ import { extractFormData, extractEmail, extractUrl, extractBoolean, validateData
 import { logger } from './logger'
 import type { ContactInsert, ContactUpdate, EventInsert, EventUpdate, RelationshipPipelineInsert, RelationshipPipelineUpdate } from './supabase'
 import { Contact, Event, EventInvitation, RelationshipPipeline } from './database.types'
+import { updateAreaInNotes, type ContactArea } from './contact-area-utils'
 
 // Validation schemas
 const contactSchema = z.object({
@@ -18,6 +19,7 @@ const contactSchema = z.object({
   job_title: z.string().optional(),
   linkedin_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   contact_type: z.string().min(1, 'Please select a contact type'),
+
   is_in_cto_club: z.boolean().default(false),
   general_notes: z.string().optional(),
 })
@@ -99,6 +101,7 @@ export async function createContact(formData: FormData) {
       job_title: extractFormData(formData, 'job_title'),
       linkedin_url: extractUrl(formData, 'linkedin_url'),
       contact_type: extractFormData(formData, 'contact_type'),
+
       is_in_cto_club: extractBoolean(formData, 'is_in_cto_club'),
       general_notes: extractFormData(formData, 'general_notes'),
     }
@@ -148,6 +151,7 @@ export async function updateContact(id: string, formData: FormData) {
       job_title: extractFormData(formData, 'job_title'),
       linkedin_url: extractUrl(formData, 'linkedin_url'),
       contact_type: extractFormData(formData, 'contact_type'),
+
       is_in_cto_club: extractBoolean(formData, 'is_in_cto_club'),
       general_notes: extractFormData(formData, 'general_notes'),
     }
@@ -495,7 +499,7 @@ export async function getEventInvitations(eventId: string) {
     // Fetch all contacts at once
     const { data: contacts, error: contactsError } = await supabase
       .from('contacts')
-      .select('*')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
       .in('id', [...contactIds, ...invitedByIds])
 
     if (contactsError) {
@@ -697,7 +701,7 @@ export async function getAvailableContactsForEvent(eventId: string) {
     // Get all contacts
     const { data: allContacts, error } = await supabase
       .from('contacts')
-      .select('*')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
       .order('name', { ascending: true, nullsFirst: false })
 
     if (error) {
@@ -1104,6 +1108,83 @@ export async function bulkAddContactNotes(contactIds: string[], notes: string) {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to update contact notes' 
+    }
+  }
+}
+
+export async function bulkUpdateContactArea(contactIds: string[], area: ContactArea) {
+  try {
+    if (contactIds.length === 0) {
+      return { success: false, error: 'No contacts selected' }
+    }
+
+    // Get all contacts to update their general_notes with area
+    const { data: contacts, error: fetchError } = await supabase
+      .from('contacts')
+      .select('id, general_notes')
+      .in('id', contactIds)
+
+    if (fetchError) {
+      console.error('Bulk update area fetch error:', fetchError)
+      throw new Error(fetchError.message)
+    }
+
+    if (!contacts || contacts.length === 0) {
+      return { success: false, error: 'No contacts found to update' }
+    }
+
+    // Update each contact individually to avoid upsert issues
+    let successCount = 0
+    const errors: string[] = []
+
+    for (const contact of contacts) {
+      try {
+        const updatedNotes = updateAreaInNotes(contact.general_notes, area)
+
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({ general_notes: updatedNotes })
+          .eq('id', contact.id)
+
+        if (updateError) {
+          console.error(`Error updating contact ${contact.id}:`, updateError)
+          errors.push(`Failed to update contact ${contact.id}: ${updateError.message}`)
+        } else {
+          successCount++
+        }
+      } catch (contactError) {
+        console.error(`Error processing contact ${contact.id}:`, contactError)
+        errors.push(`Failed to process contact ${contact.id}`)
+      }
+    }
+
+    revalidatePath('/contacts')
+
+    if (successCount === 0) {
+      return {
+        success: false,
+        error: `Failed to update any contacts. Errors: ${errors.join(', ')}`
+      }
+    }
+
+    if (errors.length > 0) {
+      return {
+        success: true,
+        data: { updated: successCount },
+        message: `Updated area for ${successCount} of ${contactIds.length} contact${contactIds.length !== 1 ? 's' : ''}. Some updates failed.`
+      }
+    }
+
+    return {
+      success: true,
+      data: { updated: successCount },
+      message: `Updated area for ${successCount} contact${successCount !== 1 ? 's' : ''}`
+    }
+  } catch (error) {
+    console.error('Bulk update contact area action error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update contact area'
     }
   }
 }

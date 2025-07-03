@@ -21,4 +21,5 @@ export type {
   EventUpdate,
   EventInvitationUpdate,
   RelationshipPipelineUpdate,
-} from './database.types' 
+  ContactArea,
+} from './database.types'

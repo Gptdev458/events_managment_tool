@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { updateContact } from '@/lib/actions'
 import { CONTACT_TYPES } from '@/lib/constants'
+import { CONTACT_AREA_OPTIONS, combineNotesWithArea, extractAreaFromNotes, extractNotesWithoutArea, type ContactArea } from '@/lib/contact-area-utils'
 import { Contact } from '@/lib/supabase'
 import { Edit, Loader2 } from 'lucide-react'
 import { ContactBusinessLogic } from '@/lib/business-logic'
@@ -25,6 +26,7 @@ const contactFormSchema = z.object({
   job_title: z.string().optional(),
   linkedin_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   contact_type: z.string().min(1, 'Please select a contact type'),
+  area: z.union([z.enum(['engineering', 'founders', 'product']), z.null()]).optional(),
   is_in_cto_club: z.boolean(),
   general_notes: z.string().optional(),
 })
@@ -49,8 +51,9 @@ export function EditContactDialog({ contact }: EditContactDialogProps) {
       job_title: contact.job_title || '',
       linkedin_url: contact.linkedin_url || '',
       contact_type: contact.contact_type,
+      area: extractAreaFromNotes(contact.general_notes),
       is_in_cto_club: contact.is_in_cto_club || false,
-      general_notes: contact.general_notes || '',
+      general_notes: extractNotesWithoutArea(contact.general_notes) || '',
     },
   })
 
@@ -60,11 +63,21 @@ export function EditContactDialog({ contact }: EditContactDialogProps) {
     try {
       const formData = new FormData()
       formData.append('id', contact.id)
-      Object.entries(values).forEach(([key, value]) => {
+
+      // Handle area field specially - combine with general_notes
+      const { area, general_notes, ...otherValues } = values
+      const combinedNotes = combineNotesWithArea(general_notes || null, area as ContactArea)
+
+      Object.entries(otherValues).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           formData.append(key, value.toString())
         }
       })
+
+      // Add the combined notes
+      if (combinedNotes) {
+        formData.append('general_notes', combinedNotes)
+      }
 
       const result = await updateContact(contact.id, formData)
       
@@ -204,6 +217,34 @@ export function EditContactDialog({ contact }: EditContactDialogProps) {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="area"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Area</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(value === 'none' ? null : value)} value={field.value || 'none'}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select business area (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {CONTACT_AREA_OPTIONS.map(area => (
+                        <SelectItem key={area.value} value={area.value}>
+                          {area.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+
 
             <FormField
               control={form.control}

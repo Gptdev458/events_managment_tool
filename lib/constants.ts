@@ -4,6 +4,14 @@ export const CONTACT_TYPES = [
   { value: 'target_guest', label: 'Target Guest' },
   { value: 'host', label: 'Host' },
   { value: 'established_connection', label: 'Established Connection' },
+  { value: 'vip', label: 'VIP' },
+] as const
+
+// Contact Areas - Business domains
+export const CONTACT_AREAS = [
+  { value: 'engineering', label: 'Engineering' },
+  { value: 'founders', label: 'Founders' },
+  { value: 'product', label: 'Product' },
 ] as const
 
 // Event Types - Updated categories
@@ -77,8 +85,9 @@ export const FOLLOW_UP_ACTIONS = {
 
 // Type exports for TypeScript
 export type ContactType = typeof CONTACT_TYPES[number]['value']
+export type ContactAreaType = typeof CONTACT_AREAS[number]['value']
 export type EventType = typeof EVENT_TYPES[number]['value']
 export type EventStatus = typeof EVENT_STATUSES[number]['value']
 export type InvitationStatus = typeof INVITATION_STATUSES[number]['value']
 export type PipelineStage = typeof PIPELINE_STAGES[number]['value']
-export type FollowUpActionCategory = keyof typeof FOLLOW_UP_ACTIONS 
+export type FollowUpActionCategory = keyof typeof FOLLOW_UP_ACTIONS

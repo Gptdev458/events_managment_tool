@@ -7,13 +7,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EditContactDialog } from './edit-contact-dialog'
 import { DeleteContactDialog } from './delete-contact-dialog'
 import { ContactDetailModal } from './contact-detail-modal'
+import { BulkEditContactsDialog } from './bulk-edit-contacts-dialog'
 import { Contact } from '@/lib/supabase'
 import { CONTACT_TYPES } from '@/lib/constants'
-import { Search, Edit, Trash2, ExternalLink, Eye, Linkedin } from 'lucide-react'
+import { Search, Edit, Trash2, ExternalLink, Eye, Linkedin, Users, Edit3, UserCheck, Square } from 'lucide-react'
 import { ContactBusinessLogic } from '@/lib/business-logic'
+import { extractAreaFromNotes, getAreaLabel, CONTACT_AREA_OPTIONS } from '@/lib/contact-area-utils'
 
 interface ContactsTableProps {
   contacts: Contact[]
@@ -22,10 +25,16 @@ interface ContactsTableProps {
 export function ContactsTable({ contacts }: ContactsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
+  const [filterArea, setFilterArea] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'email' | 'company' | 'created_at'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
+
+  // Bulk edit state
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([])
+  const [showBulkEditDialog, setShowBulkEditDialog] = useState(false)
+  const [bulkOperationType, setBulkOperationType] = useState<'contact-type' | 'cto-club' | 'company' | 'area' | 'notes' | 'pipeline' | 'delete'>('contact-type')
 
   // Debounce search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -43,8 +52,12 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
         company.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       
       const matchesType = filterType === 'all' || contact.contact_type === filterType
-      
-      return matchesSearch && matchesType
+      const contactArea = extractAreaFromNotes(contact.general_notes)
+      const matchesArea = filterArea === 'all' ||
+        (filterArea === 'none' && !contactArea) ||
+        contactArea === filterArea
+
+      return matchesSearch && matchesType && matchesArea
     })
     .sort((a, b) => {
       let aVal: string = ''
@@ -74,7 +87,7 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
       } else {
         return bVal.localeCompare(aVal)
       }
-    }), [contacts, debouncedSearchTerm, filterType, sortBy, sortOrder])
+    }), [contacts, debouncedSearchTerm, filterType, filterArea, sortBy, sortOrder])
 
   const getDisplayName = (contact: Contact) => {
     return ContactBusinessLogic.getDisplayName(contact)
@@ -88,6 +101,38 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
   const handleViewDetails = (contact: Contact) => {
     setSelectedContact(contact)
     setDetailModalOpen(true)
+  }
+
+  // Bulk edit handlers
+  const handleSelectContact = (contactId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedContactIds(prev => [...prev, contactId])
+    } else {
+      setSelectedContactIds(prev => prev.filter(id => id !== contactId))
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedContactIds(filteredAndSortedContacts.map(contact => contact.id))
+    } else {
+      setSelectedContactIds([])
+    }
+  }
+
+  const handleBulkEdit = (operationType: typeof bulkOperationType) => {
+    setBulkOperationType(operationType)
+    setShowBulkEditDialog(true)
+  }
+
+  const handleBulkEditSuccess = () => {
+    setSelectedContactIds([])
+  }
+
+  const getSelectedContacts = () => {
+    return selectedContactIds
+      .map(id => contacts.find(contact => contact.id === id))
+      .filter(Boolean) as Contact[]
   }
 
   return (
@@ -116,6 +161,20 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by area" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Areas</SelectItem>
+            <SelectItem value="none">No Area</SelectItem>
+            {CONTACT_AREA_OPTIONS.map(area => (
+              <SelectItem key={area.value} value={area.value}>
+                {area.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
           const [field, order] = value.split('-')
           setSortBy(field as any)
@@ -135,6 +194,74 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
         </Select>
       </div>
 
+      {/* Bulk Actions Toolbar */}
+      {selectedContactIds.length > 0 && (
+        <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">
+              {selectedContactIds.length} contact{selectedContactIds.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkEdit('contact-type')}
+              className="flex items-center gap-1"
+            >
+              <Edit3 className="h-3 w-3" />
+              Update Type
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkEdit('cto-club')}
+              className="flex items-center gap-1"
+            >
+              <UserCheck className="h-3 w-3" />
+              CTO Club
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkEdit('company')}
+              className="flex items-center gap-1"
+            >
+              <Edit3 className="h-3 w-3" />
+              Company
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkEdit('area')}
+              className="flex items-center gap-1"
+            >
+              <Edit3 className="h-3 w-3" />
+              Area
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleBulkEdit('delete')}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedContactIds([])}
+              className="flex items-center gap-1"
+            >
+              <Square className="h-3 w-3" />
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Results Summary */}
       <div className="text-sm text-gray-600">
         Showing {filteredAndSortedContacts.length} of {contacts.length} contacts
@@ -145,17 +272,24 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedContactIds.length === filteredAndSortedContacts.length && filteredAndSortedContacts.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Area</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAndSortedContacts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
                   {searchTerm || filterType !== 'all' 
                     ? 'No contacts match your search criteria'
                     : 'No contacts yet. Add your first contact!'
@@ -165,6 +299,12 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
             ) : (
               filteredAndSortedContacts.map((contact) => (
                 <TableRow key={contact.id} className="h-16">
+                  <TableCell className="py-2">
+                    <Checkbox
+                      checked={selectedContactIds.includes(contact.id)}
+                      onCheckedChange={(checked) => handleSelectContact(contact.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium py-2">
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
@@ -214,6 +354,9 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
                       {CONTACT_TYPES.find(type => type.value === contact.contact_type)?.label || contact.contact_type}
                     </Badge>
                   </TableCell>
+                  <TableCell className="py-2 text-sm">
+                    {getAreaLabel(extractAreaFromNotes(contact.general_notes))}
+                  </TableCell>
                   <TableCell className="text-right py-2">
                     <div className="flex items-center justify-end gap-1">
                       <Button
@@ -243,6 +386,15 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
           onOpenChange={setDetailModalOpen}
         />
       )}
+
+      {/* Bulk Edit Dialog */}
+      <BulkEditContactsDialog
+        open={showBulkEditDialog}
+        onOpenChange={setShowBulkEditDialog}
+        selectedContacts={getSelectedContacts()}
+        operationType={bulkOperationType}
+        onSuccess={handleBulkEditSuccess}
+      />
     </div>
   )
-} 
+}

@@ -11,18 +11,20 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Contact } from '@/lib/supabase'
 import { CONTACT_TYPES, PIPELINE_STAGES } from '@/lib/constants'
+import { CONTACT_AREA_OPTIONS, type ContactArea } from '@/lib/contact-area-utils'
 import { ContactBusinessLogic } from '@/lib/business-logic'
-import { 
-  bulkUpdateContactType, 
-  bulkUpdateCtoClubStatus, 
-  bulkUpdateCompany, 
-  bulkAddContactNotes, 
-  bulkAddToPipeline, 
-  bulkDeleteContacts 
+import {
+  bulkUpdateContactType,
+  bulkUpdateCtoClubStatus,
+  bulkUpdateCompany,
+  bulkUpdateContactArea,
+  bulkAddContactNotes,
+  bulkAddToPipeline,
+  bulkDeleteContacts
 } from '@/lib/actions'
 import { Loader2, Users, AlertTriangle } from 'lucide-react'
 
-type BulkOperationType = 'contact-type' | 'cto-club' | 'company' | 'notes' | 'pipeline' | 'delete'
+type BulkOperationType = 'contact-type' | 'cto-club' | 'company' | 'area' | 'notes' | 'pipeline' | 'delete'
 
 interface BulkEditContactsDialogProps {
   open: boolean
@@ -43,6 +45,7 @@ export function BulkEditContactsDialog({
   const [contactType, setContactType] = useState('')
   const [isCtoClub, setIsCtoClub] = useState(false)
   const [company, setCompany] = useState('')
+  const [area, setArea] = useState<ContactArea>(null)
   const [notes, setNotes] = useState('')
   const [pipelineStage, setPipelineStage] = useState('')
   const [nextActionDescription, setNextActionDescription] = useState('')
@@ -73,6 +76,10 @@ export function BulkEditContactsDialog({
 
         case 'company':
           result = await bulkUpdateCompany(contactIds, company)
+          break
+
+        case 'area':
+          result = await bulkUpdateContactArea(contactIds, area)
           break
 
         case 'notes':
@@ -111,6 +118,7 @@ export function BulkEditContactsDialog({
         setContactType('')
         setIsCtoClub(false)
         setCompany('')
+        setArea(null)
         setNotes('')
         setPipelineStage('')
         setNextActionDescription('')
@@ -131,6 +139,7 @@ export function BulkEditContactsDialog({
       case 'contact-type': return 'Update Contact Type'
       case 'cto-club': return 'Update CTO Club Status'
       case 'company': return 'Update Company'
+      case 'area': return 'Update Area'
       case 'notes': return 'Add Notes'
       case 'pipeline': return 'Add to Pipeline'
       case 'delete': return 'Delete Contacts'
@@ -144,6 +153,7 @@ export function BulkEditContactsDialog({
       case 'contact-type': return 'Update Type'
       case 'cto-club': return isCtoClub ? 'Add to CTO Club' : 'Remove from CTO Club'
       case 'company': return 'Update Company'
+      case 'area': return 'Update Area'
       case 'notes': return 'Add Notes'
       case 'pipeline': return 'Add to Pipeline'
       case 'delete': return 'Delete Contacts'
@@ -236,6 +246,26 @@ export function BulkEditContactsDialog({
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="Enter company name (leave empty to clear)"
                 />
+              </div>
+            )}
+
+            {/* Area Form */}
+            {operationType === 'area' && (
+              <div className="space-y-2">
+                <Label htmlFor="area">Business Area</Label>
+                <Select value={area || 'none'} onValueChange={(value) => setArea(value === 'none' ? null : value as ContactArea)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select business area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {CONTACT_AREA_OPTIONS.map(areaOption => (
+                      <SelectItem key={areaOption.value} value={areaOption.value}>
+                        {areaOption.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 

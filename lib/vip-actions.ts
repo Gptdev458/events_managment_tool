@@ -23,7 +23,7 @@ import type { Contact } from './database.types'
 export async function getVipContacts(): Promise<Contact[]> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('*')
+    .select('id, name, email, additional_emails, company, job_title, contact_type, area, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
     .eq('contact_type', 'VIP')
     .order('name')
 
