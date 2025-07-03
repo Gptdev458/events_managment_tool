@@ -312,7 +312,7 @@ export async function getContacts() {
   try {
     const { data, error } = await supabase
       .from('contacts')
-      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -499,7 +499,7 @@ export async function getEventInvitations(eventId: string) {
     // Fetch all contacts at once
     const { data: contacts, error: contactsError } = await supabase
       .from('contacts')
-      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
       .in('id', [...contactIds, ...invitedByIds])
 
     if (contactsError) {
@@ -564,7 +564,7 @@ export async function addContactToEvent(formData: FormData) {
     // Fetch the contact data separately
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('id, name, email, company, job_title, contact_type')
+      .select('id, name, email, company, job_title, contact_type, area')
       .eq('id', invitation.contact_id)
       .single()
 
@@ -619,7 +619,7 @@ export async function updateInvitationStatus(invitationId: number, formData: For
     // Fetch the contact data separately
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('id, name, email, company, job_title')
+      .select('id, name, email, company, job_title, area')
       .eq('id', invitation.contact_id)
       .single()
 
@@ -701,7 +701,7 @@ export async function getAvailableContactsForEvent(eventId: string) {
     // Get all contacts
     const { data: allContacts, error } = await supabase
       .from('contacts')
-      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
       .order('name', { ascending: true, nullsFirst: false })
 
     if (error) {
@@ -786,7 +786,7 @@ export async function getContactEventHistory(contactId: string) {
 export async function getContact(id: string): Promise<Contact | null> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
+    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
     .eq('id', id)
     .single()
 
@@ -801,7 +801,7 @@ export async function getContact(id: string): Promise<Contact | null> {
 export async function searchContacts(query: string): Promise<Contact[]> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
+    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
     .or(`name.ilike.%${query}%,email.ilike.%${query}%,company.ilike.%${query}%`)
     .order('created_at', { ascending: false })
     .limit(50)

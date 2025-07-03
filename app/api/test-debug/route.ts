@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getContacts, getRelationshipPipeline } from '@/lib/actions'
-import { ContactBusinessLogic } from '@/lib/business-logic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +15,20 @@ export async function GET(request: NextRequest) {
     const contactsInPipeline = new Set(pipeline.map(p => p.contact_id))
     const availableContacts = contacts.filter(contact => !contactsInPipeline.has(contact.id))
 
+    // Helper function to get display name without full Contact type
+    const getDisplayName = (contact: any) => {
+      if (contact.first_name) {
+        return `${contact.first_name} ${contact.last_name || ''}`.trim()
+      }
+      if (contact.name) {
+        return contact.name.trim()
+      }
+      if (contact.email) {
+        return contact.email
+      }
+      return 'Unknown Contact'
+    }
+
     return NextResponse.json({
       debug: {
         totalContacts: contacts.length,
@@ -23,7 +36,7 @@ export async function GET(request: NextRequest) {
         availableContacts: availableContacts.length,
         contacts: contacts.map(c => ({
           id: c.id,
-          name: ContactBusinessLogic.getDisplayName(c),
+          name: getDisplayName(c),
           company: c.company,
           job_title: c.job_title,
           contact_type: c.contact_type
@@ -35,7 +48,7 @@ export async function GET(request: NextRequest) {
         })),
         availableContactsList: availableContacts.map(c => ({
           id: c.id,
-          name: ContactBusinessLogic.getDisplayName(c),
+          name: getDisplayName(c),
           company: c.company,
           job_title: c.job_title
         }))
