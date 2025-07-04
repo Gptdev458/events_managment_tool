@@ -68,15 +68,18 @@ export interface VipContact {
   name: string | null
   additional_emails: string[] | null
   
+  // VIP Profile fields (stored in database)
+  current_projects?: string[] | null
+  goals_aspirations?: string[] | null
+  our_strategic_goals?: string[] | null
+  
   // VIP-specific fields (populated via joins)
   vip_tags?: VipTag[]
   vip_initiatives?: VipInitiative[]
   vip_activities?: VipActivity[]
   
-  // Profile fields (stored in general_notes or separate fields)
+  // Legacy profile fields
   relationship_summary?: string
-  current_projects?: string[]
-  goals_aspirations?: string[]
   our_goals?: string[]
 }
 

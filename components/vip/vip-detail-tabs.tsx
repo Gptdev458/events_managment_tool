@@ -332,6 +332,51 @@ const VipDashboard = memo(function VipDashboard({ contact, initiatives, activiti
     .filter(a => new Date(a.activity_date) > new Date())
     .slice(0, 5)
 
+  // Parse strategic goals from contact data
+  const strategicGoals = useMemo(() => {
+    try {
+      if (contact.our_strategic_goals) {
+        return Array.isArray(contact.our_strategic_goals) 
+          ? contact.our_strategic_goals 
+          : JSON.parse(contact.our_strategic_goals as string)
+      }
+      return []
+    } catch (error) {
+      console.error('Error parsing strategic goals:', error)
+      return []
+    }
+  }, [contact.our_strategic_goals])
+
+  // Parse VIP's personal goals from contact data
+  const personalGoals = useMemo(() => {
+    try {
+      if (contact.goals_aspirations) {
+        return Array.isArray(contact.goals_aspirations) 
+          ? contact.goals_aspirations 
+          : JSON.parse(contact.goals_aspirations as string)
+      }
+      return []
+    } catch (error) {
+      console.error('Error parsing personal goals:', error)
+      return []
+    }
+  }, [contact.goals_aspirations])
+
+  // Parse VIP's current projects from contact data
+  const currentProjects = useMemo(() => {
+    try {
+      if (contact.current_projects) {
+        return Array.isArray(contact.current_projects) 
+          ? contact.current_projects 
+          : JSON.parse(contact.current_projects as string)
+      }
+      return []
+    } catch (error) {
+      console.error('Error parsing current projects:', error)
+      return []
+    }
+  }, [contact.current_projects])
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -363,9 +408,19 @@ const VipDashboard = memo(function VipDashboard({ contact, initiatives, activiti
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-gray-600">
-              <p>Strategic objectives to be defined in Profile section.</p>
-            </div>
+            {strategicGoals.length > 0 ? (
+              <ul className="space-y-2">
+                {strategicGoals.map((goal: string, index: number) => (
+                  <li key={index} className="text-gray-700">
+                    • {goal}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-gray-600">
+                <p>No strategic goals defined yet. Add them in the Profile section.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -396,6 +451,31 @@ const VipDashboard = memo(function VipDashboard({ contact, initiatives, activiti
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* VIP's Goals & Aspirations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-500" />
+              {contact.name || 'VIP'}'s Goals & Aspirations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {personalGoals.length > 0 ? (
+              <ul className="space-y-2">
+                {personalGoals.map((goal: string, index: number) => (
+                  <li key={index} className="text-gray-700">
+                    • {goal}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-gray-600">
+                <p>No personal goals documented yet. Add them in the Profile section.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Active Ask Initiatives */}
         <Card>
           <CardHeader>
@@ -421,26 +501,26 @@ const VipDashboard = memo(function VipDashboard({ contact, initiatives, activiti
           </CardContent>
         </Card>
         
-        {/* Upcoming Activities */}
+        {/* Current Projects */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Upcoming Activities
+              <Building2 className="h-5 w-5 text-green-500" />
+              Current Projects & Ventures
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {upcomingActivities.length > 0 ? (
+            {currentProjects.length > 0 ? (
               <ul className="space-y-2">
-                {upcomingActivities.map(activity => (
-                  <li key={activity.id} className="text-gray-700">
-                    • {activity.summary} - {new Date(activity.activity_date).toLocaleDateString()}
+                {currentProjects.map((project: string, index: number) => (
+                  <li key={index} className="text-gray-700">
+                    • {project}
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="text-gray-600">
-                <p>No upcoming activities. Schedule interactions in the Activities tab.</p>
+                <p>No current projects listed. Add them in the Profile section.</p>
               </div>
             )}
           </CardContent>
@@ -465,6 +545,32 @@ const VipProfile = memo(function VipProfile({ contact, tags, onRefresh, onAddTag
   const [strategicGoals, setStrategicGoals] = useState<string[]>([])
   const [newItem, setNewItem] = useState('')
 
+  // Load existing profile data on mount
+  useEffect(() => {
+    try {
+      if (contact.current_projects) {
+        const projects = Array.isArray(contact.current_projects) 
+          ? contact.current_projects 
+          : JSON.parse(contact.current_projects as string)
+        setCurrentProjects(projects)
+      }
+      if (contact.goals_aspirations) {
+        const goals = Array.isArray(contact.goals_aspirations)
+          ? contact.goals_aspirations
+          : JSON.parse(contact.goals_aspirations as string)
+        setPersonalGoals(goals)
+      }
+      if (contact.our_strategic_goals) {
+        const strategic = Array.isArray(contact.our_strategic_goals)
+          ? contact.our_strategic_goals
+          : JSON.parse(contact.our_strategic_goals as string)
+        setStrategicGoals(strategic)
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error)
+    }
+  }, [contact])
+
   const handleSaveRelationshipSummary = async () => {
     try {
       const { supabase } = await import('@/lib/supabase')
@@ -482,31 +588,70 @@ const VipProfile = memo(function VipProfile({ contact, tags, onRefresh, onAddTag
     }
   }
 
+  const saveToDatabase = async (field: string, data: string[]) => {
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      const { error } = await supabase
+        .from('contacts')
+        .update({ [field]: JSON.stringify(data) })
+        .eq('id', contact.id)
+      
+      if (error) {
+        console.error(`Error saving ${field}:`, error)
+      }
+    } catch (error) {
+      console.error(`Error saving ${field}:`, error)
+    }
+  }
+
   const addNewItem = async (type: 'projects' | 'goals' | 'strategic') => {
     if (!newItem.trim()) return
     
     const newItemText = newItem.trim()
     setNewItem('')
     
+    let updatedArray: string[] = []
+    let dbField = ''
+    
     if (type === 'projects') {
-      setCurrentProjects([...currentProjects, newItemText])
+      updatedArray = [...currentProjects, newItemText]
+      setCurrentProjects(updatedArray)
+      dbField = 'current_projects'
     } else if (type === 'goals') {
-      setPersonalGoals([...personalGoals, newItemText])
+      updatedArray = [...personalGoals, newItemText]
+      setPersonalGoals(updatedArray)
+      dbField = 'goals_aspirations'
     } else if (type === 'strategic') {
-      setStrategicGoals([...strategicGoals, newItemText])
+      updatedArray = [...strategicGoals, newItemText]
+      setStrategicGoals(updatedArray)
+      dbField = 'our_strategic_goals'
     }
     
+    // Save to database
+    await saveToDatabase(dbField, updatedArray)
     setEditing(null)
   }
 
-  const removeItem = (type: 'projects' | 'goals' | 'strategic', index: number) => {
+  const removeItem = async (type: 'projects' | 'goals' | 'strategic', index: number) => {
+    let updatedArray: string[] = []
+    let dbField = ''
+    
     if (type === 'projects') {
-      setCurrentProjects(currentProjects.filter((_, i) => i !== index))
+      updatedArray = currentProjects.filter((_, i) => i !== index)
+      setCurrentProjects(updatedArray)
+      dbField = 'current_projects'
     } else if (type === 'goals') {
-      setPersonalGoals(personalGoals.filter((_, i) => i !== index))
+      updatedArray = personalGoals.filter((_, i) => i !== index)
+      setPersonalGoals(updatedArray)
+      dbField = 'goals_aspirations'
     } else if (type === 'strategic') {
-      setStrategicGoals(strategicGoals.filter((_, i) => i !== index))
+      updatedArray = strategicGoals.filter((_, i) => i !== index)
+      setStrategicGoals(updatedArray)
+      dbField = 'our_strategic_goals'
     }
+    
+    // Save to database
+    await saveToDatabase(dbField, updatedArray)
   }
 
   return (

@@ -312,7 +312,7 @@ export async function getContacts() {
   try {
     const { data, error } = await supabase
       .from('contacts')
-      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -786,7 +786,7 @@ export async function getContactEventHistory(contactId: string) {
 export async function getContact(id: string): Promise<Contact | null> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
+    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
     .eq('id', id)
     .single()
 
@@ -801,7 +801,7 @@ export async function getContact(id: string): Promise<Contact | null> {
 export async function searchContacts(query: string): Promise<Contact[]> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
+    .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
     .or(`name.ilike.%${query}%,email.ilike.%${query}%,company.ilike.%${query}%`)
     .order('created_at', { ascending: false })
     .limit(50)
