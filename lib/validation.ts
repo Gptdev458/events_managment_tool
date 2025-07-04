@@ -74,6 +74,16 @@ export function extractBoolean(formData: FormData, key: string): boolean {
 }
 
 /**
+ * Extract nullable string from FormData (returns null for empty strings)
+ */
+export function extractNullableString(formData: FormData, key: string): string | null {
+  if (!formData) return null
+  const value = formData.get(key)
+  const sanitized = sanitizeString(value)
+  return sanitized === '' || sanitized === 'none' ? null : sanitized
+}
+
+/**
  * Generic validation wrapper that ensures proper error handling
  */
 export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; error: string } {

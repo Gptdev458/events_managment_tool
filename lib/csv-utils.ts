@@ -32,7 +32,7 @@ export const CSVExport = {
       ContactBusinessLogic.formatAdditionalEmailsForInput(contact),
       contact.company || '',
       contact.job_title || '',
-      contact.contact_type,
+      contact.contact_type || '',
       contact.linkedin_url || '',
       contact.is_in_cto_club ? 'Yes' : 'No',
       (contact.general_notes || '').replace(/"/g, '""'), // Escape quotes
@@ -466,7 +466,7 @@ export function contactToCSVRow(contact: Contact): string[] {
     ContactBusinessLogic.formatAdditionalEmailsForInput(contact),
     contact.company || '',
     contact.job_title || '',
-    contact.contact_type,
+    contact.contact_type || '',
     contact.linkedin_url || '',
     contact.is_in_cto_club ? 'Yes' : 'No',
     contact.general_notes || ''

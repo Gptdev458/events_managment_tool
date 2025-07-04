@@ -16,7 +16,7 @@ import { Contact } from '@/lib/supabase'
 import { CONTACT_TYPES } from '@/lib/constants'
 import { Search, Edit, Trash2, ExternalLink, Eye, Linkedin, Users, Edit3, UserCheck, Square } from 'lucide-react'
 import { ContactBusinessLogic } from '@/lib/business-logic'
-import { extractAreaFromNotes, getAreaLabel, CONTACT_AREA_OPTIONS } from '@/lib/contact-area-utils'
+import { CONTACT_AREA_OPTIONS } from '@/lib/contact-area-utils'
 
 interface ContactsTableProps {
   contacts: Contact[]
@@ -52,7 +52,7 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
         company.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       
       const matchesType = filterType === 'all' || contact.contact_type === filterType
-      const contactArea = extractAreaFromNotes(contact.general_notes)
+      const contactArea = contact.area // Use the new area field directly
       const matchesArea = filterArea === 'all' ||
         (filterArea === 'none' && !contactArea) ||
         contactArea === filterArea
@@ -96,6 +96,11 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const getAreaLabel = (area: string | null) => {
+    if (!area) return '-'
+    return area.charAt(0).toUpperCase() + area.slice(1)
   }
 
   const handleViewDetails = (contact: Contact) => {
@@ -355,7 +360,7 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2 text-sm">
-                    {getAreaLabel(extractAreaFromNotes(contact.general_notes))}
+                    {getAreaLabel(contact.area)}
                   </TableCell>
                   <TableCell className="text-right py-2">
                     <div className="flex items-center justify-end gap-1">

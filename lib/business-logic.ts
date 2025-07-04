@@ -257,7 +257,7 @@ export const ContactBusinessLogic = {
     const hasSeniorTitle = seniorTitles.some(title => jobTitle.includes(title))
     
     const keyContactTypes = ['Strategic Partner', 'Key Executive', 'Industry Leader']
-    const isKeyContactType = keyContactTypes.includes(contact.contact_type)
+    const isKeyContactType = contact.contact_type ? keyContactTypes.includes(contact.contact_type) : false
     
     return hasSeniorTitle || isKeyContactType
   }

@@ -14,7 +14,7 @@ export type Database = {
           additional_emails: string[] | null
           area: Database["public"]["Enums"]["contact_area"] | null
           company: string | null
-          contact_type: string
+          contact_type: string | null
           created_at: string | null
           email: string | null
           first_name: string | null
@@ -30,7 +30,7 @@ export type Database = {
           additional_emails?: string[] | null
           area?: Database["public"]["Enums"]["contact_area"] | null
           company?: string | null
-          contact_type: string
+          contact_type?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string | null
@@ -46,7 +46,7 @@ export type Database = {
           additional_emails?: string[] | null
           area?: Database["public"]["Enums"]["contact_area"] | null
           company?: string | null
-          contact_type?: string
+          contact_type?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string | null
@@ -59,6 +59,79 @@ export type Database = {
           name?: string | null
         }
         Relationships: []
+      }
+      cto_club_pipeline: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          id: number
+          last_action_date: string | null
+          next_action: string | null
+          next_action_date: string | null
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          id?: never
+          last_action_date?: string | null
+          next_action?: string | null
+          next_action_date?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          id?: never
+          last_action_date?: string | null
+          next_action?: string | null
+          next_action_date?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_club_pipeline_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_club_potential_members: {
+        Row: {
+          added_date: string | null
+          contact_id: string
+          created_at: string | null
+          id: number
+          notes: string | null
+        }
+        Insert: {
+          added_date?: string | null
+          contact_id: string
+          created_at?: string | null
+          id?: never
+          notes?: string | null
+        }
+        Update: {
+          added_date?: string | null
+          contact_id?: string
+          created_at?: string | null
+          id?: never
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_club_potential_members_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_invitations: {
         Row: {
@@ -486,7 +559,7 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-// Legacy type exports for existing code compatibility
+// ========= TABLE TYPE EXPORTS =========
 export type Contact = Tables<'contacts'>
 export type Event = Tables<'events'>
 export type EventInvitation = Tables<'event_invitations'>
@@ -502,7 +575,7 @@ export type EventUpdate = TablesUpdate<'events'>
 export type EventInvitationUpdate = TablesUpdate<'event_invitations'>
 export type RelationshipPipelineUpdate = TablesUpdate<'relationship_pipeline'>
 
-// VIP table type exports
+// ========= VIP MANAGEMENT TYPES =========
 export type VipTag = Tables<'vip_tags'>
 export type VipContactTag = Tables<'vip_contact_tags'>
 export type VipInitiative = Tables<'vip_initiatives'>
@@ -521,20 +594,37 @@ export type VipInitiativeUpdate = TablesUpdate<'vip_initiatives'>
 export type VipTaskUpdate = TablesUpdate<'vip_tasks'>
 export type VipActivityUpdate = TablesUpdate<'vip_activities'>
 
-// Contact enum types
+// ========= CTO CLUB TYPES =========
+export type CtoClubPotentialMember = Tables<'cto_club_potential_members'>
+export type CtoClubPipeline = Tables<'cto_club_pipeline'>
+
+export type CtoClubPotentialMemberInsert = TablesInsert<'cto_club_potential_members'>
+export type CtoClubPipelineInsert = TablesInsert<'cto_club_pipeline'>
+
+export type CtoClubPotentialMemberUpdate = TablesUpdate<'cto_club_potential_members'>
+export type CtoClubPipelineUpdate = TablesUpdate<'cto_club_pipeline'>
+
+// ========= ENUM EXPORTS =========
 export type ContactArea = Database['public']['Enums']['contact_area']
 
-// VIP enum types
+// VIP Management Enums
 export type VipInitiativeType = Database['public']['Enums']['vip_initiative_type']
 export type VipInitiativeStatus = Database['public']['Enums']['vip_initiative_status']
 export type VipTaskStatus = Database['public']['Enums']['vip_task_status']
 export type VipActivityType = Database['public']['Enums']['vip_activity_type']
 
-// VIP Statistics interface
+// ========= INTERFACE EXPORTS =========
 export interface VipStats {
   total_vips: number
   active_give_initiatives: number
   active_ask_initiatives: number
   total_activities: number
   recent_interactions: number
+}
+
+export interface CtoClubStats {
+  current_members: number
+  potential_members: number
+  pipeline_items: number
+  ready_for_next_step: number
 } 

@@ -82,13 +82,19 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
   useEffect(() => {
     const loadVipData = async () => {
       try {
+        console.log('Loading VIP data for contact:', contact.id)
         const data = await getVipDataBulk(contact.id)
+        console.log('VIP data received:', data)
+        
         setInitiatives(data.initiatives)
         setActivities(data.activities)
         setTags(data.tags)
         setAllTasks(data.allTasks)
+        
+        console.log('State updated - Initiatives:', data.initiatives.length, 'Activities:', data.activities.length)
       } catch (error) {
         console.error('Error loading VIP data:', error)
+        console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
       } finally {
         setLoading(false)
       }

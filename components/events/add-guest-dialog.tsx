@@ -127,7 +127,8 @@ export function AddGuestDialog({
     return matchesSearch && matchesContactType && matchesEventTypeAttended
   })
 
-  const getContactTypeLabel = (value: string) => {
+  const getContactTypeLabel = (value: string | null) => {
+    if (!value) return 'None'
     return CONTACT_TYPES.find(type => type.value === value)?.label || value
   }
 

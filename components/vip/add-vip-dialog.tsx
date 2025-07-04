@@ -152,7 +152,7 @@ export function AddVipDialog({ open, onOpenChange }: AddVipDialogProps) {
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-500">
             <TabsTrigger value="new" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               New VIP

@@ -152,7 +152,7 @@ export function BulkOperations({
           formData.append('general_notes', contact.general_notes || '')
           
           // Update the fields we're changing
-          formData.append('contact_type', editContactType || contact.contact_type)
+          formData.append('contact_type', editContactType || contact.contact_type || '')
                      formData.append('is_in_cto_club', (editIsCtoClub !== null ? editIsCtoClub : (contact.is_in_cto_club || false)).toString())
 
           const result = await updateContact(contactId, formData)

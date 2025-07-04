@@ -6,14 +6,24 @@ import { cn } from '@/lib/utils'
 
 const tools = [
   {
+    href: '/contacts',
+    label: 'Contacts',
+    description: 'Manage your network and relationships'
+  },
+  {
     href: '/events-management',
     label: 'Events Management',
-    description: 'Manage events, contacts, and pipeline'
+    description: 'Manage events, invitations, and pipeline'
   },
   {
     href: '/vip-management',
     label: 'VIP Management', 
     description: 'Strategic relationship management'
+  },
+  {
+    href: '/cto-club',
+    label: 'CTO Club',
+    description: 'Manage CTO Club members and recruitment'
   },
 ]
 
@@ -21,7 +31,9 @@ export function ToolNavigation() {
   const pathname = usePathname()
   
   const getCurrentTool = () => {
+    if (pathname.startsWith('/contacts')) return '/contacts'
     if (pathname.startsWith('/vip-management')) return '/vip-management'
+    if (pathname.startsWith('/cto-club')) return '/cto-club'
     return '/events-management'
   }
 

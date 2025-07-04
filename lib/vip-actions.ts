@@ -24,7 +24,7 @@ export async function getVipContacts(): Promise<Contact[]> {
   const { data, error } = await supabase
     .from('contacts')
     .select('id, name, email, additional_emails, company, job_title, contact_type, area, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name')
-    .eq('contact_type', 'VIP')
+    .eq('contact_type', 'vip')
     .order('name')
 
   if (error) {
@@ -53,7 +53,7 @@ export async function getVipContactById(id: string): Promise<Contact | null> {
 export async function updateContactAsVip(contactId: string): Promise<void> {
   const { error } = await supabase
     .from('contacts')
-    .update({ contact_type: 'VIP' })
+    .update({ contact_type: 'vip' })
     .eq('id', contactId)
 
   if (error) {
@@ -360,6 +360,7 @@ export async function getVipDataBulk(contactId: string): Promise<{
   allTasks: VipTask[]
 }> {
   try {
+    console.log('getVipDataBulk called for contactId:', contactId)
     const [initiatives, activities, tags, allTasks] = await Promise.all([
       supabase
         .from('vip_initiatives')
@@ -404,17 +405,32 @@ export async function getVipDataBulk(contactId: string): Promise<{
         .order('created_at', { ascending: false })
     ])
 
-    if (initiatives.error) throw initiatives.error
-    if (activities.error) throw activities.error
-    if (tags.error) throw tags.error
-    if (allTasks.error) throw allTasks.error
+    if (initiatives.error) {
+      console.error('Initiatives error:', initiatives.error)
+      throw initiatives.error
+    }
+    if (activities.error) {
+      console.error('Activities error:', activities.error)
+      throw activities.error
+    }
+    if (tags.error) {
+      console.error('Tags error:', tags.error)
+      throw tags.error
+    }
+    if (allTasks.error) {
+      console.error('AllTasks error:', allTasks.error)
+      throw allTasks.error
+    }
 
-    return {
+    const result = {
       initiatives: initiatives.data || [],
       activities: activities.data || [],
       tags: (tags.data || []).map((item: any) => item.vip_tags).filter(Boolean),
       allTasks: allTasks.data || []
     }
+    
+    console.log('getVipDataBulk result:', result)
+    return result
   } catch (error) {
     console.error('Error fetching bulk VIP data:', error)
     throw new Error('Failed to fetch VIP data')

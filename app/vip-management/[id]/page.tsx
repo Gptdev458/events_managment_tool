@@ -18,7 +18,7 @@ export default async function VipDetailPage({ params }: VipDetailPageProps) {
   }
 
   // Ensure this is actually a VIP
-  if (contact.contact_type !== 'VIP') {
+  if (contact.contact_type !== 'vip') {
     notFound()
   }
 

@@ -35,9 +35,10 @@ export default async function EventsManagementDashboard() {
     return acc
   }, {} as Record<string, number>)
   
-  const newLeads = pipelineStats['New Lead'] || pipelineStats['Identified'] || 0
-  const inProgress = pipelineStats['Warm Lead'] || pipelineStats['In Progress'] || pipelineStats['Engaged'] || pipelineStats['Active Discussion'] || 0
-  const readyToClose = pipelineStats['Ready to Close'] || pipelineStats['Ready for Partnership'] || pipelineStats['Partnership Pending'] || 0
+  // Group stages by relationship development phase
+  const newConnections = (pipelineStats['New Contact'] || 0) + (pipelineStats['Initial Outreach'] || 0)
+  const developing = (pipelineStats['Connected'] || 0) + (pipelineStats['Building Relationship'] || 0)
+  const strategic = (pipelineStats['Strong Relationship'] || 0) + (pipelineStats['Strategic Partner'] || 0)
 
   // Get recent events (last 5, sorted by creation date)
   const recentEvents = events
@@ -117,7 +118,7 @@ export default async function EventsManagementDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{pipeline.length}</div>
-              <p className="text-xs text-muted-foreground">Active prospects</p>
+              <p className="text-xs text-muted-foreground">Relationship building</p>
             </CardContent>
           </Link>
         </Card>
@@ -179,8 +180,8 @@ export default async function EventsManagementDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Pipeline Status</CardTitle>
-            <CardDescription>Current prospects overview</CardDescription>
+            <CardTitle>Relationship Pipeline</CardTitle>
+            <CardDescription>Strategic relationship development</CardDescription>
           </CardHeader>
           <CardContent>
             {pipeline.length === 0 ? (
@@ -196,16 +197,16 @@ export default async function EventsManagementDashboard() {
             ) : (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span>New Leads</span>
-                  <span className="font-medium">{newLeads}</span>
+                  <span>New Connections</span>
+                  <span className="font-medium">{newConnections}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>In Progress</span>
-                  <span className="font-medium">{inProgress}</span>
+                  <span>Developing</span>
+                  <span className="font-medium">{developing}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Ready to Close</span>
-                  <span className="font-medium">{readyToClose}</span>
+                  <span>Strategic Partners</span>
+                  <span className="font-medium">{strategic}</span>
                 </div>
                 <div className="pt-2 border-t">
                   <Button asChild variant="ghost" size="sm" className="w-full">
