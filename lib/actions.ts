@@ -499,7 +499,7 @@ export async function getEventInvitations(eventId: string) {
     // Fetch all contacts at once
     const { data: contacts, error: contactsError } = await supabase
       .from('contacts')
-      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
       .in('id', [...contactIds, ...invitedByIds])
 
     if (contactsError) {
@@ -564,7 +564,7 @@ export async function addContactToEvent(formData: FormData) {
     // Fetch the contact data separately
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('id, name, email, company, job_title, contact_type, area')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
       .eq('id', invitation.contact_id)
       .single()
 
@@ -619,7 +619,7 @@ export async function updateInvitationStatus(invitationId: number, formData: For
     // Fetch the contact data separately
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('id, name, email, company, job_title, area')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
       .eq('id', invitation.contact_id)
       .single()
 
@@ -701,7 +701,7 @@ export async function getAvailableContactsForEvent(eventId: string) {
     // Get all contacts
     const { data: allContacts, error } = await supabase
       .from('contacts')
-      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area')
+      .select('id, name, email, additional_emails, company, job_title, contact_type, linkedin_url, is_in_cto_club, general_notes, created_at, first_name, last_name, area, current_projects, goals_aspirations, our_strategic_goals')
       .order('name', { ascending: true, nullsFirst: false })
 
     if (error) {
