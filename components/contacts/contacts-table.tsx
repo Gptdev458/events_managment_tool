@@ -20,9 +20,10 @@ import { CONTACT_AREA_OPTIONS } from '@/lib/contact-area-utils'
 
 interface ContactsTableProps {
   contacts: Contact[]
+  onContactUpdated?: (updatedContact: Contact) => void
 }
 
-export function ContactsTable({ contacts }: ContactsTableProps) {
+export function ContactsTable({ contacts, onContactUpdated }: ContactsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterArea, setFilterArea] = useState<string>('all')
@@ -372,7 +373,7 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      <EditContactDialog contact={contact} />
+                      <EditContactDialog contact={contact} onContactUpdated={onContactUpdated} />
                       <DeleteContactDialog contact={contact} />
                     </div>
                   </TableCell>

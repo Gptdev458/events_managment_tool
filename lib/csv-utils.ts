@@ -20,8 +20,12 @@ export const CSVExport = {
       'Company',
       'Job Title',
       'Contact Type',
+      'Area',
       'LinkedIn URL',
       'In CTO Club',
+      'Current Projects',
+      'Goals & Aspirations',
+      'Our Strategic Goals',
       'General Notes',
       'Created Date'
     ]
@@ -33,8 +37,12 @@ export const CSVExport = {
       contact.company || '',
       contact.job_title || '',
       contact.contact_type || '',
+      contact.area || '',
       contact.linkedin_url || '',
       contact.is_in_cto_club ? 'Yes' : 'No',
+      Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : (contact.current_projects || ''),
+      Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : (contact.goals_aspirations || ''),
+      Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : (contact.our_strategic_goals || ''),
       (contact.general_notes || '').replace(/"/g, '""'), // Escape quotes
       UtilityLogic.formatDate(contact.created_at)
     ])
@@ -251,19 +259,46 @@ export const CSVImport = {
     const headers = csvData[0].map(h => h.toLowerCase().trim())
     const dataRows = csvData.slice(1)
     
-    // Map headers to expected fields - support both new 'name' field and legacy first/last name
-    const fieldMap = {
-      email: this.findHeader(headers, ['email', 'email address', 'e-mail']),
-      name: this.findHeader(headers, ['name', 'full name', 'contact name']),
-      first_name: this.findHeader(headers, ['first name', 'firstname', 'first', 'given name']),
-      last_name: this.findHeader(headers, ['last name', 'lastname', 'last', 'surname', 'family name']),
-      company: this.findHeader(headers, ['company', 'organization', 'employer']),
-      job_title: this.findHeader(headers, ['job title', 'title', 'position', 'role']),
-      contact_type: this.findHeader(headers, ['contact type', 'type', 'category']),
-      linkedin_url: this.findHeader(headers, ['linkedin', 'linkedin url', 'linkedin profile']),
-      is_in_cto_club: this.findHeader(headers, ['cto club', 'in cto club', 'cto member']),
-      general_notes: this.findHeader(headers, ['notes', 'general notes', 'comments'])
-    }
+    // Map headers to indices for flexible parsing
+    const headerMap: Record<number, string> = {}
+
+    // Map CSV headers to our field names
+    headers.forEach((header, index) => {
+      const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '')
+      
+      // More flexible header matching
+      if (normalizedHeader === 'name' || normalizedHeader === 'fullname' || normalizedHeader === 'contactname') {
+        headerMap[index] = 'name'
+      } else if (normalizedHeader === 'email' || normalizedHeader === 'emailaddress' || normalizedHeader === 'primaryemail') {
+        headerMap[index] = 'email'
+      } else if (normalizedHeader.includes('additional') && normalizedHeader.includes('email')) {
+        headerMap[index] = 'additional_emails'
+      } else if (normalizedHeader === 'company' || normalizedHeader === 'organization' || normalizedHeader === 'employer') {
+        headerMap[index] = 'company'
+      } else if (normalizedHeader === 'jobtitle' || normalizedHeader === 'title' || normalizedHeader === 'position' || normalizedHeader === 'role') {
+        headerMap[index] = 'job_title'
+      } else if (normalizedHeader === 'contacttype' || normalizedHeader === 'type' || normalizedHeader === 'category') {
+        headerMap[index] = 'contact_type'
+      } else if (normalizedHeader === 'area' || normalizedHeader === 'contactarea' || normalizedHeader === 'specialization') {
+        headerMap[index] = 'area'
+      } else if (normalizedHeader === 'linkedinurl' || normalizedHeader === 'linkedin' || normalizedHeader === 'linkedinprofile') {
+        headerMap[index] = 'linkedin_url'
+      } else if (normalizedHeader.includes('cto') || normalizedHeader.includes('club')) {
+        headerMap[index] = 'is_in_cto_club'
+      } else if (normalizedHeader.includes('current') && normalizedHeader.includes('project')) {
+        headerMap[index] = 'current_projects'
+      } else if (normalizedHeader.includes('goal') && normalizedHeader.includes('aspiration')) {
+        headerMap[index] = 'goals_aspirations'
+      } else if (normalizedHeader.includes('strategic') && normalizedHeader.includes('goal')) {
+        headerMap[index] = 'our_strategic_goals'
+      } else if (normalizedHeader.includes('note') || normalizedHeader === 'generalnotes' || normalizedHeader === 'comments') {
+        headerMap[index] = 'general_notes'
+      }
+    })
+
+    // Debug logging
+    console.log('CSV Headers:', headers)
+    console.log('Header Map:', headerMap)
 
     const validContacts: Contact[] = []
     const errors: { row: number; errors: string[] }[] = []
@@ -273,52 +308,46 @@ export const CSVImport = {
       const contact: Partial<Contact> = {}
       const rowErrors: string[] = []
 
-      // Extract data based on field mapping
-      if (fieldMap.email !== -1) {
-        contact.email = row[fieldMap.email]?.trim() || null
+      // Get field values using the header map
+      const getFieldValue = (fieldName: string): string | undefined => {
+        const headerIndex = Object.keys(headerMap).find(key => headerMap[Number(key)] === fieldName)
+        return headerIndex !== undefined ? (row[Number(headerIndex)] || '') : undefined
       }
 
-      // Handle name field - prefer single name field, fallback to combining first/last
-      if (fieldMap.name !== -1) {
-        contact.name = row[fieldMap.name]?.trim() || null
-      } else if (fieldMap.first_name !== -1 || fieldMap.last_name !== -1) {
-        const firstName = fieldMap.first_name !== -1 ? (row[fieldMap.first_name]?.trim() || '') : ''
-        const lastName = fieldMap.last_name !== -1 ? (row[fieldMap.last_name]?.trim() || '') : ''
-        const fullName = [firstName, lastName].filter(Boolean).join(' ')
-        contact.name = fullName || null
-      }
-
-      if (fieldMap.company !== -1) {
-        contact.company = row[fieldMap.company]?.trim() || null
-      }
-      if (fieldMap.job_title !== -1) {
-        contact.job_title = row[fieldMap.job_title]?.trim() || null
-      }
-      if (fieldMap.contact_type !== -1) {
-        contact.contact_type = row[fieldMap.contact_type]?.trim() || 'General Contact'
-      } else {
-        contact.contact_type = 'General Contact' // Default value
-      }
-      if (fieldMap.linkedin_url !== -1) {
-        const url = row[fieldMap.linkedin_url]?.trim()
-        contact.linkedin_url = url && url !== '' ? url : null
-      }
-      if (fieldMap.is_in_cto_club !== -1) {
-        const value = row[fieldMap.is_in_cto_club]?.trim().toLowerCase()
-        contact.is_in_cto_club = ['yes', 'true', '1', 'y'].includes(value || '')
-      } else {
-        contact.is_in_cto_club = false // Default value
-      }
-      if (fieldMap.general_notes !== -1) {
-        contact.general_notes = row[fieldMap.general_notes]?.trim() || null
-      }
-
-      // Validate contact data
-      const validation = ContactBusinessLogic.validateContact(contact)
+      // Extract and validate fields
+      const name = getFieldValue('name')?.trim()
+      const email = getFieldValue('email')?.trim() || null
       
-      if (!validation.isValid) {
-        rowErrors.push(...validation.errors)
+      // Basic validation
+      if (!name && !email) {
+        rowErrors.push('Contact must have either a name or email address')
+        return
       }
+
+      if (email && !isValidEmail(email)) {
+        rowErrors.push(`Invalid email format: ${email}`)
+        return
+      }
+
+      // Set contact fields
+      contact.name = name || undefined
+      contact.email = email
+      contact.company = getFieldValue('company')?.trim() || undefined
+      contact.job_title = getFieldValue('job_title')?.trim() || undefined
+      contact.contact_type = getFieldValue('contact_type')?.trim() || 'prospect'
+      
+      // Handle area field with enum validation
+      const areaStr = getFieldValue('area')?.trim().toLowerCase()
+      contact.area = (areaStr && ['engineering', 'founders', 'product'].includes(areaStr)) ? areaStr as any : undefined
+      
+      contact.linkedin_url = getFieldValue('linkedin_url')?.trim() || undefined
+      contact.general_notes = getFieldValue('general_notes')?.trim() || undefined
+      
+      // Handle boolean field
+      const inCtoClubStr = getFieldValue('is_in_cto_club')?.trim().toLowerCase()
+      contact.is_in_cto_club = inCtoClubStr === 'yes' || inCtoClubStr === 'true' || inCtoClubStr === '1'
+
+      // Skip validation since we're doing it inline above
 
       // Additional import-specific validations
       if (rowErrors.length > 0) {
@@ -332,7 +361,7 @@ export const CSVImport = {
       valid: validContacts,
       errors,
       summary: {
-        total: dataRows.length,
+        total: Math.max(0, dataRows.length), // Total data rows (excluding header)
         valid: validContacts.length,
         errors: errors.length
       }
@@ -383,7 +412,7 @@ export const CSVImport = {
 // Template Generation
 export const CSVTemplates = {
   /**
-   * Generates a contacts import template
+   * Generates a CSV template for contacts with sample data
    */
   generateContactsTemplate(): string {
     const headers = [
@@ -393,44 +422,60 @@ export const CSVTemplates = {
       'Company',
       'Job Title',
       'Contact Type',
+      'Area',
       'LinkedIn URL',
       'In CTO Club',
+      'Current Projects',
+      'Goals & Aspirations',
+      'Our Strategic Goals',
       'General Notes'
     ]
 
     const sampleData = [
       [
-        'John Doe',
-        'john.doe@example.com',
-        'john.personal@gmail.com, jdoe@consulting.com',
-        'Tech Corp',
+        'John Smith',
+        'john@techcorp.com',
+        'j.smith@gmail.com',
+        'TechCorp Inc',
         'CTO',
-        'Strategic Partner',
-        'https://linkedin.com/in/johndoe',
+        'cto_club_member',
+        'engineering',
+        'https://linkedin.com/in/johnsmith',
         'Yes',
-        'Met at conference, interested in partnership'
+        'AI Platform, Mobile App',
+        'Scale engineering team, Implement DevOps',
+        'Digital transformation, Cloud migration',
+        'Met at TechConf 2024, very interested in our AI solutions'
       ],
       [
-        'Jane Smith',
-        'jane.smith@startup.com',
+        'Sarah Johnson',
+        'sarah@startup.io',
         '',
-        'Startup Inc',
-        'CEO',
-        'Key Executive',
-        'https://linkedin.com/in/janesmith',
+        'Startup.io',
+        'Founder & CEO',
+        'target_guest',
+        'founders',
+        'https://linkedin.com/in/sarahjohnson',
         'No',
-        'Potential collaboration opportunity'
+        'SaaS Platform, Fundraising',
+        'Raise Series A, Product-market fit',
+        'Strategic partnerships, Market expansion',
+        'Potential partnership opportunity'
       ],
       [
-        'Anonymous Contact',
-        '',
-        '',
-        'Mystery Corp',
-        'Unknown',
-        'prospect',
-        '',
-        'No',
-        'Contact without email - identified by name only'
+        'Mike Chen',
+        'mike@productco.com',
+        'mike.chen@personal.com',
+        'ProductCo',
+        'Head of Product',
+        'established_connection',
+        'product',
+        'https://linkedin.com/in/mikechen',
+        'Yes',
+        'User Analytics, A/B Testing',
+        'Improve user engagement, Data-driven decisions',
+        'Product innovation, User experience',
+        'Expert in product analytics, potential speaker'
       ]
     ]
 
@@ -448,17 +493,24 @@ export const CSVTemplates = {
 
 // CSV headers (in the order they should appear)
 export const CSV_HEADERS = [
-  'Name',
-  'Email',
-  'Additional Emails',
-  'Company',
-  'Job Title',
-  'Contact Type',
-  'LinkedIn URL',
-  'In CTO Club',
-  'General Notes'
+  'name',
+  'email',
+  'additional_emails',
+  'company',
+  'job_title',
+  'contact_type',
+  'area',
+  'linkedin_url',
+  'is_in_cto_club',
+  'current_projects',
+  'goals_aspirations',
+  'our_strategic_goals',
+  'general_notes'
 ] as const
 
+/**
+ * Converts a contact object to CSV row format
+ */
 export function contactToCSVRow(contact: Contact): string[] {
   return [
     ContactBusinessLogic.getDisplayName(contact),
@@ -467,18 +519,73 @@ export function contactToCSVRow(contact: Contact): string[] {
     contact.company || '',
     contact.job_title || '',
     contact.contact_type || '',
+    contact.area || '',
     contact.linkedin_url || '',
     contact.is_in_cto_club ? 'Yes' : 'No',
-    contact.general_notes || ''
+    Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : (contact.current_projects || ''),
+    Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : (contact.goals_aspirations || ''),
+    Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : (contact.our_strategic_goals || ''),
+    (contact.general_notes || '').replace(/"/g, '""') // Escape quotes
   ]
 }
 
-export function parseCSVToContacts(csvContent: string): { 
-  contacts: Partial<Contact>[], 
-  errors: string[] 
+export function parseCSVToContacts(csvContent: string): {
+  valid: Contact[]
+  errors: { row: number; errors: string[] }[]
+  summary: { total: number; valid: number; errors: number }
 } {
-  const contacts: Partial<Contact>[] = []
-  const errors: string[] = []
+  const lines = csvContent.split('\n').filter(line => line.trim())
+  if (lines.length < 2) {
+    return {
+      valid: [],
+      errors: [{ row: 1, errors: ['CSV file is empty or has no data rows'] }],
+      summary: { total: 0, valid: 0, errors: 1 }
+    }
+  }
+
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''))
+  const headerMap: Record<number, string> = {}
+  
+  // Map CSV headers to our field names
+  headers.forEach((header, index) => {
+    const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '')
+    
+    // More flexible header matching
+    if (normalizedHeader === 'name' || normalizedHeader === 'fullname' || normalizedHeader === 'contactname') {
+      headerMap[index] = 'name'
+    } else if (normalizedHeader === 'email' || normalizedHeader === 'emailaddress' || normalizedHeader === 'primaryemail') {
+      headerMap[index] = 'email'
+    } else if (normalizedHeader.includes('additional') && normalizedHeader.includes('email')) {
+      headerMap[index] = 'additional_emails'
+    } else if (normalizedHeader === 'company' || normalizedHeader === 'organization' || normalizedHeader === 'employer') {
+      headerMap[index] = 'company'
+    } else if (normalizedHeader === 'jobtitle' || normalizedHeader === 'title' || normalizedHeader === 'position' || normalizedHeader === 'role') {
+      headerMap[index] = 'job_title'
+    } else if (normalizedHeader === 'contacttype' || normalizedHeader === 'type' || normalizedHeader === 'category') {
+      headerMap[index] = 'contact_type'
+    } else if (normalizedHeader === 'area' || normalizedHeader === 'contactarea' || normalizedHeader === 'specialization') {
+      headerMap[index] = 'area'
+    } else if (normalizedHeader === 'linkedinurl' || normalizedHeader === 'linkedin' || normalizedHeader === 'linkedinprofile') {
+      headerMap[index] = 'linkedin_url'
+    } else if (normalizedHeader.includes('cto') || normalizedHeader.includes('club')) {
+      headerMap[index] = 'is_in_cto_club'
+    } else if (normalizedHeader.includes('current') && normalizedHeader.includes('project')) {
+      headerMap[index] = 'current_projects'
+    } else if (normalizedHeader.includes('goal') && normalizedHeader.includes('aspiration')) {
+      headerMap[index] = 'goals_aspirations'
+    } else if (normalizedHeader.includes('strategic') && normalizedHeader.includes('goal')) {
+      headerMap[index] = 'our_strategic_goals'
+    } else if (normalizedHeader.includes('note') || normalizedHeader === 'generalnotes' || normalizedHeader === 'comments') {
+      headerMap[index] = 'general_notes'
+    }
+  })
+
+  // Debug logging
+  console.log('CSV Headers:', headers)
+  console.log('Header Map:', headerMap)
+
+  const validContacts: Contact[] = []
+  const errors: { row: number; errors: string[] }[] = []
   
   try {
     const records = Papa.parse<string[]>(csvContent, {
@@ -489,66 +596,52 @@ export function parseCSVToContacts(csvContent: string): {
     })
 
     if (records.errors.length > 0) {
-      errors.push(...records.errors.map((err: any) => `Parse error: ${err.message}`))
+      errors.push(...records.errors.map((err: any, index: number) => ({
+        row: index + 1,
+        errors: [`Parse error: ${err.message}`]
+      })))
     }
 
     const rows = records.data
     if (rows.length === 0) {
-      errors.push('CSV file is empty')
-      return { contacts, errors }
+      return {
+        valid: [],
+        errors: [{ row: 1, errors: ['CSV file is empty'] }],
+        summary: { total: 0, valid: 0, errors: 1 }
+      }
     }
 
-    // Get headers from first row and normalize them
-    const headers = rows[0].map((h: any) => h.trim().toLowerCase())
     const dataRows = rows.slice(1)
-
-    // Map headers to indices for flexible parsing
-    const headerMap = {
-      name: CSVImport.findHeader(headers, ['name', 'full name', 'contact name']),
-      firstName: CSVImport.findHeader(headers, ['first name', 'firstname', 'fname']),
-      lastName: CSVImport.findHeader(headers, ['last name', 'lastname', 'lname']),
-      email: CSVImport.findHeader(headers, ['email', 'email address', 'primary email']),
-      additionalEmails: CSVImport.findHeader(headers, ['additional emails', 'secondary emails', 'other emails']),
-      company: CSVImport.findHeader(headers, ['company', 'organization', 'employer']),
-      jobTitle: CSVImport.findHeader(headers, ['job title', 'title', 'position', 'role']),
-      contactType: CSVImport.findHeader(headers, ['contact type', 'type', 'category']),
-      linkedinUrl: CSVImport.findHeader(headers, ['linkedin url', 'linkedin', 'linkedin profile']),
-      inCtoClub: CSVImport.findHeader(headers, ['in cto club', 'cto club', 'is in cto club']),
-      generalNotes: CSVImport.findHeader(headers, ['general notes', 'notes', 'comments', 'description'])
-    }
-
-    // Validate required fields - remove email requirement
-    // Note: No longer requiring email since contacts can exist without email addresses
 
     dataRows.forEach((row, index) => {
       const rowNumber = index + 2 // +2 because we skip header and use 1-based indexing
+      const rowErrors: string[] = []
       
       try {
+        // Get field values using the header map
+        const getFieldValue = (fieldName: string): string | undefined => {
+          const headerIndex = Object.keys(headerMap).find(key => headerMap[Number(key)] === fieldName)
+          return headerIndex !== undefined ? getCellValue(row, Number(headerIndex)) : undefined
+        }
+
         // Handle email (now optional)
-        const email = getCellValue(row, headerMap.email)?.trim() || null
+        const email = getFieldValue('email')?.trim() || null
 
         // Validate email format if provided
         if (email && !isValidEmail(email)) {
-          errors.push(`Row ${rowNumber}: Invalid email format: ${email}`)
-          return
+          rowErrors.push(`Invalid email format: ${email}`)
         }
 
-        // Handle name with fallback to first/last name, then email if no name provided
-        let name = getCellValue(row, headerMap.name)?.trim()
-        if (!name) {
-          const firstName = getCellValue(row, headerMap.firstName)?.trim() || ''
-          const lastName = getCellValue(row, headerMap.lastName)?.trim() || ''
-          name = `${firstName} ${lastName}`.trim() || undefined
-        }
+        // Handle name
+        const name = getFieldValue('name')?.trim()
         
-        // If still no name and no email, this contact cannot be identified
+        // If no name and no email, this contact cannot be identified
         if (!name && !email) {
-          errors.push(`Row ${rowNumber}: Contact must have either a name or email address`)
-          return
+          rowErrors.push('Contact must have either a name or email address')
         }
 
         // Handle additional emails
-        const additionalEmailsStr = getCellValue(row, headerMap.additionalEmails)?.trim()
+        const additionalEmailsStr = getFieldValue('additional_emails')?.trim()
         let additionalEmails: string[] | null = null
         
         if (additionalEmailsStr) {
@@ -559,8 +652,7 @@ export function parseCSVToContacts(csvContent: string): {
           // Validate each additional email
           for (const additionalEmail of emails) {
             if (!isValidEmail(additionalEmail)) {
-              errors.push(`Row ${rowNumber}: Invalid additional email format: ${additionalEmail}`)
-              return
+              rowErrors.push(`Invalid additional email format: ${additionalEmail}`)
             }
           }
           
@@ -568,42 +660,82 @@ export function parseCSVToContacts(csvContent: string): {
         }
 
         // Parse contact type with default
-        const contactType = getCellValue(row, headerMap.contactType)?.trim() || 'prospect'
+        const contactType = getFieldValue('contact_type')?.trim() || 'prospect'
+        
+        // Parse area field
+        const areaStr = getFieldValue('area')?.trim().toLowerCase()
+        let area: string | null = null
+        if (areaStr && ['engineering', 'founders', 'product'].includes(areaStr)) {
+          area = areaStr
+        }
         
         // Parse LinkedIn URL
-        let linkedinUrl = getCellValue(row, headerMap.linkedinUrl)?.trim()
+        let linkedinUrl = getFieldValue('linkedin_url')?.trim()
         if (linkedinUrl && !isValidUrl(linkedinUrl)) {
-          errors.push(`Row ${rowNumber}: Invalid LinkedIn URL format: ${linkedinUrl}`)
-          return
+          rowErrors.push(`Invalid LinkedIn URL format: ${linkedinUrl}`)
         }
 
         // Parse boolean fields
-        const inCtoClubStr = getCellValue(row, headerMap.inCtoClub)?.trim().toLowerCase()
+        const inCtoClubStr = getFieldValue('is_in_cto_club')?.trim().toLowerCase()
         const inCtoClub = inCtoClubStr === 'yes' || inCtoClubStr === 'true' || inCtoClubStr === '1'
 
-        const contact: Partial<Contact> = {
-          name: name || undefined,
-          email,
-          additional_emails: additionalEmails,
-          company: getCellValue(row, headerMap.company)?.trim() || undefined,
-          job_title: getCellValue(row, headerMap.jobTitle)?.trim() || undefined,
-          contact_type: contactType,
-          linkedin_url: linkedinUrl || undefined,
-          is_in_cto_club: inCtoClub,
-          general_notes: getCellValue(row, headerMap.generalNotes)?.trim() || undefined
+        // Parse array fields (projects and goals)
+        const parseArrayField = (value: string | undefined): string[] | null => {
+          if (!value?.trim()) return null
+          return value.split(',').map(item => item.trim()).filter(item => item.length > 0)
         }
 
-        contacts.push(contact)
+        const currentProjects = parseArrayField(getFieldValue('current_projects'))
+        const goalsAspirations = parseArrayField(getFieldValue('goals_aspirations'))
+        const ourStrategicGoals = parseArrayField(getFieldValue('our_strategic_goals'))
+
+        // If there are validation errors, add them to the errors array
+        if (rowErrors.length > 0) {
+          errors.push({ row: rowNumber, errors: rowErrors })
+        } else {
+          // Create the contact object
+          const contact: Partial<Contact> = {
+            name: name || undefined,
+            email,
+            additional_emails: additionalEmails,
+            company: getFieldValue('company')?.trim() || undefined,
+            job_title: getFieldValue('job_title')?.trim() || undefined,
+            contact_type: contactType,
+            area: area as any, // Cast to match the enum type
+            linkedin_url: linkedinUrl || undefined,
+            is_in_cto_club: inCtoClub,
+            current_projects: currentProjects,
+            goals_aspirations: goalsAspirations,
+            our_strategic_goals: ourStrategicGoals,
+            general_notes: getFieldValue('general_notes')?.trim() || undefined
+          }
+
+          validContacts.push(contact as Contact)
+        }
       } catch (error) {
-        errors.push(`Row ${rowNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        errors.push({ 
+          row: rowNumber, 
+          errors: [error instanceof Error ? error.message : 'Unknown error'] 
+        })
       }
     })
 
   } catch (error) {
-    errors.push(`CSV parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    errors.push({ 
+      row: 1, 
+      errors: [`CSV parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] 
+    })
   }
 
-  return { contacts, errors }
+  return {
+    valid: validContacts,
+    errors,
+    summary: {
+      total: Math.max(0, lines.length - 1), // Total data rows (excluding header)
+      valid: validContacts.length,
+      errors: errors.length
+    }
+  }
 }
 
 // Helper functions

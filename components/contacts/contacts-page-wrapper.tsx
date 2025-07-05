@@ -5,12 +5,13 @@ import { Contact } from '@/lib/supabase'
 
 interface ContactsPageWrapperProps {
   contacts: Contact[]
+  onContactUpdated?: (updatedContact: Contact) => void
 }
 
-export function ContactsPageWrapper({ contacts }: ContactsPageWrapperProps) {
+export function ContactsPageWrapper({ contacts, onContactUpdated }: ContactsPageWrapperProps) {
   return (
     <div className="space-y-4">
-      <ContactsTable contacts={contacts} />
+      <ContactsTable contacts={contacts} onContactUpdated={onContactUpdated} />
     </div>
   )
 } 

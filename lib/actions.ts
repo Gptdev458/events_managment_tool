@@ -13,15 +13,18 @@ import { type ContactArea } from './contact-area-utils'
 // Validation schemas
 const contactSchema = z.object({
   name: z.string().optional(),
-  email: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')).or(z.null()),
   additional_emails: z.string().optional(),
   company: z.string().optional(),
   job_title: z.string().optional(),
-  linkedin_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
-  contact_type: z.union([z.string(), z.null()]).optional(),
-  area: z.string().optional().nullable(),
-  is_in_cto_club: z.boolean().default(false),
-  general_notes: z.string().optional(),
+  contact_type: z.string().optional().or(z.null()),
+  area: z.string().optional().or(z.null()),
+  linkedin_url: z.string().optional(),
+  is_in_cto_club: z.boolean().optional(),
+  current_projects: z.string().optional(),
+  goals_aspirations: z.string().optional(),
+  our_strategic_goals: z.string().optional(),
+  general_notes: z.string().optional()
 })
 
 const eventSchema = z.object({
@@ -60,20 +63,25 @@ const invitationSchema = z.object({
 
 // Helper function to parse additional emails
 function parseAdditionalEmails(emailString?: string): string[] | null {
-  if (!emailString || emailString.trim() === '') return null
+  if (!emailString?.trim()) return null
   
-  const emails = emailString.split(',')
+  const emails = emailString
+    .split(',')
     .map(email => email.trim())
     .filter(email => email.length > 0)
   
-  // Validate each email
-  for (const email of emails) {
-    if (!z.string().email().safeParse(email).success) {
-      throw new Error(`Invalid email address: ${email}`)
-    }
-  }
-  
   return emails.length > 0 ? emails : null
+}
+
+function parseArrayField(fieldString?: string): string[] | null {
+  if (!fieldString?.trim()) return null
+  
+  const items = fieldString
+    .split(',')
+    .map(item => item.trim())
+    .filter(item => item.length > 0)
+  
+  return items.length > 0 ? items : null
 }
 
 // Helper function to validate and clean email
@@ -99,10 +107,13 @@ export async function createContact(formData: FormData) {
       additional_emails: extractFormData(formData, 'additional_emails'),
       company: extractFormData(formData, 'company'),
       job_title: extractFormData(formData, 'job_title'),
-      linkedin_url: extractUrl(formData, 'linkedin_url'),
       contact_type: extractNullableString(formData, 'contact_type'),
       area: extractNullableString(formData, 'area'),
+      linkedin_url: extractUrl(formData, 'linkedin_url'),
       is_in_cto_club: extractBoolean(formData, 'is_in_cto_club'),
+      current_projects: extractFormData(formData, 'current_projects'),
+      goals_aspirations: extractFormData(formData, 'goals_aspirations'),
+      our_strategic_goals: extractFormData(formData, 'our_strategic_goals'),
       general_notes: extractFormData(formData, 'general_notes'),
     }
 
@@ -113,10 +124,13 @@ export async function createContact(formData: FormData) {
     
     const validatedData = validation.data
     
-    // Parse additional emails
+    // Parse additional emails and array fields
     const processedData = {
       ...validatedData,
-      additional_emails: parseAdditionalEmails(validatedData.additional_emails)
+      additional_emails: parseAdditionalEmails(validatedData.additional_emails),
+      current_projects: parseArrayField(validatedData.current_projects),
+      goals_aspirations: parseArrayField(validatedData.goals_aspirations),
+      our_strategic_goals: parseArrayField(validatedData.our_strategic_goals)
     }
 
     const { data, error } = await supabase
@@ -149,19 +163,25 @@ export async function updateContact(id: string, formData: FormData) {
       additional_emails: extractFormData(formData, 'additional_emails'),
       company: extractFormData(formData, 'company'),
       job_title: extractFormData(formData, 'job_title'),
-      linkedin_url: extractUrl(formData, 'linkedin_url'),
       contact_type: extractNullableString(formData, 'contact_type'),
       area: extractNullableString(formData, 'area'),
+      linkedin_url: extractUrl(formData, 'linkedin_url'),
       is_in_cto_club: extractBoolean(formData, 'is_in_cto_club'),
+      current_projects: extractFormData(formData, 'current_projects'),
+      goals_aspirations: extractFormData(formData, 'goals_aspirations'),
+      our_strategic_goals: extractFormData(formData, 'our_strategic_goals'),
       general_notes: extractFormData(formData, 'general_notes'),
     }
 
     const validatedData = contactSchema.parse(rawData)
     
-    // Parse additional emails
+    // Parse additional emails and array fields
     const processedData = {
       ...validatedData,
-      additional_emails: parseAdditionalEmails(validatedData.additional_emails)
+      additional_emails: parseAdditionalEmails(validatedData.additional_emails),
+      current_projects: parseArrayField(validatedData.current_projects),
+      goals_aspirations: parseArrayField(validatedData.goals_aspirations),
+      our_strategic_goals: parseArrayField(validatedData.our_strategic_goals)
     }
 
     const { data, error } = await supabase

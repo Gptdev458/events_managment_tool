@@ -38,6 +38,15 @@ export default function ContactsPage() {
     loadContacts()
   }, [])
 
+  // Handle contact updates from edit dialog
+  const handleContactUpdated = (updatedContact: Contact) => {
+    setContacts(prevContacts => 
+      prevContacts.map(contact => 
+        contact.id === updatedContact.id ? updatedContact : contact
+      )
+    )
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -93,17 +102,34 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
+      <Tabs defaultValue="contacts" className="w-full">
         <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-500">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
           <TabsTrigger value="contacts" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Contacts
           </TabsTrigger>
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Dashboard
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="contacts" className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>All Contacts</span>
+                <Badge variant="secondary">{contacts.length} total</Badge>
+              </CardTitle>
+              <CardDescription>
+                Add, edit, search, and manage all contacts in your network
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ContactsPageWrapper contacts={contacts} onContactUpdated={handleContactUpdated} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="dashboard" className="mt-6 space-y-6">
           {/* Overview Stats */}
@@ -223,23 +249,6 @@ export default function ContactsPage() {
                   <span>Export Data</span>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="contacts" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>All Contacts</span>
-                <Badge variant="secondary">{contacts.length} total</Badge>
-              </CardTitle>
-              <CardDescription>
-                Add, edit, search, and manage all contacts in your network
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ContactsPageWrapper contacts={contacts} />
             </CardContent>
           </Card>
         </TabsContent>

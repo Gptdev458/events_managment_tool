@@ -5,6 +5,7 @@ export const CONTACT_TYPES = [
   { value: 'host', label: 'Host' },
   { value: 'established_connection', label: 'Established Connection' },
   { value: 'vip', label: 'VIP' },
+  { value: 'cto_club_member', label: 'CTO Club Member' },
 ] as const
 
 // Contact Areas - Business domains

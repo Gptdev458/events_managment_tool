@@ -260,6 +260,46 @@ export const ContactBusinessLogic = {
     const isKeyContactType = contact.contact_type ? keyContactTypes.includes(contact.contact_type) : false
     
     return hasSeniorTitle || isKeyContactType
+  },
+
+  /**
+   * Suggests optimal contact type based on contact characteristics
+   */
+  suggestContactType(contact: Partial<Contact>): string | null {
+    // If they're in CTO Club, suggest CTO Club Member type
+    if (contact.is_in_cto_club) {
+      return 'cto_club_member'
+    }
+    
+    // If they have a senior title, suggest VIP
+    const seniorTitles = ['ceo', 'cto', 'cfo', 'coo', 'vp', 'director', 'head of', 'chief']
+    const jobTitle = (contact.job_title || '').toLowerCase()
+    const hasSeniorTitle = seniorTitles.some(title => jobTitle.includes(title))
+    
+    if (hasSeniorTitle) {
+      return 'vip'
+    }
+    
+    // Default suggestion for new contacts
+    return 'target_guest'
+  },
+
+  /**
+   * Gets display text for contact type suggestion
+   */
+  getContactTypeSuggestionText(contact: Partial<Contact>): string | null {
+    const suggested = this.suggestContactType(contact)
+    if (!suggested) return null
+    
+    if (suggested === 'cto_club_member') {
+      return 'Consider setting contact type to "CTO Club Member" since they are a CTO Club member'
+    }
+    
+    if (suggested === 'vip') {
+      return 'Consider setting contact type to "VIP" based on their senior title'
+    }
+    
+    return null
   }
 }
 

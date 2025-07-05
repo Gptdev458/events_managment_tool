@@ -16,18 +16,18 @@ export type Database = {
           company: string | null
           contact_type: string | null
           created_at: string | null
-          current_projects: string[] | null
+          current_projects: string[] | string | null
           email: string | null
           first_name: string | null
           general_notes: string | null
-          goals_aspirations: string[] | null
+          goals_aspirations: string[] | string | null
           id: string
           is_in_cto_club: boolean | null
           job_title: string | null
           last_name: string | null
           linkedin_url: string | null
           name: string | null
-          our_strategic_goals: string[] | null
+          our_strategic_goals: string[] | string | null
         }
         Insert: {
           additional_emails?: string[] | null
@@ -35,18 +35,18 @@ export type Database = {
           company?: string | null
           contact_type?: string | null
           created_at?: string | null
-          current_projects?: string[] | null
+          current_projects?: string[] | string | null
           email?: string | null
           first_name?: string | null
           general_notes?: string | null
-          goals_aspirations?: string[] | null
+          goals_aspirations?: string[] | string | null
           id?: string
           is_in_cto_club?: boolean | null
           job_title?: string | null
           last_name?: string | null
           linkedin_url?: string | null
           name?: string | null
-          our_strategic_goals?: string[] | null
+          our_strategic_goals?: string[] | string | null
         }
         Update: {
           additional_emails?: string[] | null
@@ -54,18 +54,18 @@ export type Database = {
           company?: string | null
           contact_type?: string | null
           created_at?: string | null
-          current_projects?: string[] | null
+          current_projects?: string[] | string | null
           email?: string | null
           first_name?: string | null
           general_notes?: string | null
-          goals_aspirations?: string[] | null
+          goals_aspirations?: string[] | string | null
           id?: string
           is_in_cto_club?: boolean | null
           job_title?: string | null
           last_name?: string | null
           linkedin_url?: string | null
           name?: string | null
-          our_strategic_goals?: string[] | null
+          our_strategic_goals?: string[] | string | null
         }
         Relationships: []
       }

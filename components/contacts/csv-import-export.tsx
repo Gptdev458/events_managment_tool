@@ -20,7 +20,7 @@ import {
   Loader2,
   Eye
 } from 'lucide-react'
-import { CSVExport, CSVImport, CSVTemplates } from '@/lib/csv-utils'
+import { CSVExport, CSVImport, CSVTemplates, parseCSVToContacts } from '@/lib/csv-utils'
 import { Contact } from '@/lib/database.types'
 import { createContact } from '@/lib/actions'
 import { useRouter } from 'next/navigation'
@@ -85,8 +85,7 @@ export function CSVImportExport({ contacts }: CSVImportExportProps) {
     setIsProcessing(true)
     try {
       const csvText = await CSVImport.readFileAsText(selectedFile)
-      const csvData = CSVImport.parseCSV(csvText)
-      const results = CSVImport.processContactsImport(csvData)
+      const results = parseCSVToContacts(csvText)
       setImportResults(results)
     } catch (error) {
       logger.error('Failed to process CSV file', error instanceof Error ? error : new Error(String(error)))
@@ -113,19 +112,36 @@ export function CSVImportExport({ contacts }: CSVImportExportProps) {
           const formData = new FormData()
           formData.append('name', contact.name || '')
           formData.append('email', contact.email || '')
-          formData.append('additional_emails', contact.additional_emails ? contact.additional_emails.join(', ') : '')
+          formData.append('additional_emails', Array.isArray(contact.additional_emails) ? contact.additional_emails.join(', ') : (contact.additional_emails || ''))
           formData.append('company', contact.company || '')
           formData.append('job_title', contact.job_title || '')
           formData.append('contact_type', contact.contact_type || 'prospect')
+          formData.append('area', contact.area || '')
           formData.append('linkedin_url', contact.linkedin_url || '')
           formData.append('is_in_cto_club', contact.is_in_cto_club ? 'true' : 'false')
+          formData.append('current_projects', Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : (contact.current_projects || ''))
+          formData.append('goals_aspirations', Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : (contact.goals_aspirations || ''))
+          formData.append('our_strategic_goals', Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : (contact.our_strategic_goals || ''))
           formData.append('general_notes', contact.general_notes || '')
 
+          console.log(`Importing contact ${i + 1}:`, {
+            name: contact.name,
+            email: contact.email,
+            company: contact.company,
+            job_title: contact.job_title
+          })
+
           const result = await createContact(formData)
+          console.log(`Contact ${i + 1} result:`, result)
+          
           if (result.success) {
             successCount++
+            console.log(`✅ Contact ${i + 1} imported successfully`)
+          } else {
+            console.error(`❌ Contact ${i + 1} failed:`, result.error)
           }
         } catch (error) {
+          console.error(`💥 Contact ${i + 1} threw error:`, error)
           logger.error('Failed to import contact', error instanceof Error ? error : new Error(String(error)), {
             contactEmail: contact.email
           })

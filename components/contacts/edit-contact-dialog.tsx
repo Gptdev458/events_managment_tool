@@ -37,12 +37,14 @@ interface EditContactDialogProps {
   contact: Contact
   onRemoveFromPotentialMembers?: () => Promise<void>
   showPotentialMemberActions?: boolean
+  onContactUpdated?: (updatedContact: Contact) => void
 }
 
 export function EditContactDialog({ 
   contact, 
   onRemoveFromPotentialMembers,
-  showPotentialMemberActions = false 
+  showPotentialMemberActions = false,
+  onContactUpdated
 }: EditContactDialogProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,6 +62,7 @@ export function EditContactDialog({
       linkedin_url: contact.linkedin_url || '',
       contact_type: contact.contact_type || null,
       area: contact.area || null,
+      is_in_cto_club: contact.is_in_cto_club || false,
       general_notes: contact.general_notes || '',
     },
   })
@@ -76,6 +79,7 @@ export function EditContactDialog({
         linkedin_url: contact.linkedin_url || '',
         contact_type: contact.contact_type || null,
         area: contact.area || null,
+        is_in_cto_club: contact.is_in_cto_club || false,
         general_notes: contact.general_notes || '',
       })
     }
@@ -96,8 +100,10 @@ export function EditContactDialog({
       
       if (result.success) {
         setOpen(false)
-        // Don't force reload - let the app handle updates naturally
-        // window.location.reload()
+        // Call the callback to update parent component's data
+        if (onContactUpdated && result.data) {
+          onContactUpdated(result.data)
+        }
       } else {
         form.setError('root', { 
           type: 'manual', 
