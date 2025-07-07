@@ -49,6 +49,7 @@ const pipelineSchema = z.object({
   pipeline_stage: z.string().min(1, 'Please select a stage'),
   next_action_description: z.string().min(1, 'Next action is required'),
   next_action_date: z.string().min(1, 'Next action date is required'),
+  last_action_date: z.string().optional(),
 })
 
 // Event Invitation Schema
@@ -408,6 +409,7 @@ export async function addToPipeline(formData: FormData) {
       pipeline_stage: formData.get('pipeline_stage') as string,
       next_action_description: formData.get('next_action_description') as string,
       next_action_date: formData.get('next_action_date') as string,
+      last_action_date: formData.get('last_action_date') as string || undefined,
     }
 
     const validatedData = pipelineSchema.parse(rawData)
@@ -441,6 +443,7 @@ export async function updatePipelineStage(id: number, formData: FormData) {
       pipeline_stage: formData.get('pipeline_stage') as string,
       next_action_description: formData.get('next_action_description') as string,
       next_action_date: formData.get('next_action_date') as string,
+      last_action_date: formData.get('last_action_date') as string || undefined,
     }
 
     const validatedData = pipelineSchema.parse(rawData)

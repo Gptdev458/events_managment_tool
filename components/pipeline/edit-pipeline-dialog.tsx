@@ -34,14 +34,16 @@ import { ActionSelector } from '@/components/ui/action-selector'
 import { updatePipelineStage } from '@/lib/actions'
 import { PIPELINE_STAGES } from '@/lib/constants'
 import { Edit, Loader2 } from 'lucide-react'
+import { getRelationshipStageStyle, getRelationshipStageLevel } from '@/lib/pipeline-styles'
 import { ContactBusinessLogic } from '@/lib/business-logic'
 import { Contact } from '@/lib/database.types'
 
 const formSchema = z.object({
   contact_id: z.string().min(1, 'Contact ID is required'),
-  stage: z.string().min(1, 'Please select a stage'),
-  next_action: z.string().min(1, 'Next action is required'),
+  pipeline_stage: z.string().min(1, 'Please select a stage'),
+  next_action_description: z.string().min(1, 'Next action is required'),
   next_action_date: z.string().min(1, 'Next action date is required'),
+  last_action_date: z.string().optional(),
   notes: z.string().optional(),
 })
 
@@ -53,6 +55,7 @@ interface PipelineItem {
   stage: string
   next_action: string
   next_action_date: string
+  last_action_date?: string
   notes: string
   created_at: string
   contacts: Contact
@@ -70,9 +73,10 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       contact_id: pipelineItem.contact_id,
-      stage: pipelineItem.stage,
-      next_action: pipelineItem.next_action,
+      pipeline_stage: pipelineItem.stage,
+      next_action_description: pipelineItem.next_action,
       next_action_date: pipelineItem.next_action_date,
+      last_action_date: pipelineItem.last_action_date || '',
       notes: pipelineItem.notes || '',
     },
   })
@@ -109,7 +113,8 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
   }
 
   // Format date for input (YYYY-MM-DD)
-  const formatDateForInput = (dateString: string) => {
+  const formatDateForInput = (dateString: string | undefined) => {
+    if (!dateString) return ''
     return new Date(dateString).toISOString().split('T')[0]
   }
 
@@ -125,7 +130,7 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
           <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Update Pipeline Stage</DialogTitle>
           <DialogDescription>
@@ -146,7 +151,7 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
 
             <FormField
               control={form.control}
-              name="stage"
+              name="pipeline_stage"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Pipeline Stage</FormLabel>
@@ -157,11 +162,23 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {PIPELINE_STAGES.map((stage) => (
-                        <SelectItem key={stage.value} value={stage.value}>
-                          {stage.label}
-                        </SelectItem>
-                      ))}
+                      {PIPELINE_STAGES.map((stage) => {
+                        const stageStyle = getRelationshipStageStyle(stage.value)
+                        const level = getRelationshipStageLevel(stage.value)
+                        return (
+                          <SelectItem 
+                            key={stage.value} 
+                            value={stage.value}
+                            className={`${stageStyle.bgColor} ${stageStyle.borderColor} border-l-4 my-1`}
+                          >
+                            <div className={stageStyle.classes}>
+                              <div className={`w-3 h-3 rounded-full ${stageStyle.dotColor}`} />
+                              <span className="flex-1">{stage.label}</span>
+                              <span className="text-xs opacity-60 ml-2">Level {level}</span>
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -171,7 +188,7 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
 
             <FormField
               control={form.control}
-              name="next_action"
+              name="next_action_description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Next Action</FormLabel>
@@ -198,6 +215,24 @@ export function EditPipelineDialog({ pipelineItem }: EditPipelineDialogProps) {
                       type="date" 
                       min={minDate}
                       value={formatDateForInput(field.value)}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="last_action_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Action Date</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      value={field.value ? formatDateForInput(field.value) : ''}
                       onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>

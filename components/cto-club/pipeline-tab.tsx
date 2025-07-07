@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { InlineDateEditor } from "@/components/ui/inline-date-editor"
 import { 
   Plus, 
   Mail, 
@@ -25,9 +26,10 @@ import {
 import type { Contact } from "@/lib/database.types"
 import type { CtoPipelineItemWithContact } from "@/lib/cto-club-actions"
 import { ContactBusinessLogic } from "@/lib/business-logic"
-import { CTO_PIPELINE_STATUSES, CTO_NEXT_ACTIONS } from "@/lib/cto-club-constants"
-import { CONTACT_TYPES } from "@/lib/constants"
+import { CONTACT_TYPES, FOLLOW_UP_ACTIONS, PIPELINE_STAGES } from "@/lib/constants"
 import { CONTACT_AREA_OPTIONS } from "@/lib/contact-area-utils"
+import { getCtoStatusStyle, getCtoStatusLevel } from "@/lib/pipeline-styles"
+import { getUpdatedRelationshipStage, RELATIONSHIP_ACTION_TO_STAGE_MAP } from "@/lib/pipeline-stage-auto-update"
 import { AddToPipelineDialog } from "./add-to-pipeline-dialog"
 import { updatePipelineItem, removeFromPipeline } from "@/lib/cto-club-actions"
 import { updateContact, deleteContact } from "@/lib/actions"
@@ -38,15 +40,6 @@ interface PipelineTabProps {
 }
 
 export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabProps) {
-  const [editingItem, setEditingItem] = useState<number | null>(null)
-  const [editValues, setEditValues] = useState({
-    status: '',
-    next_action: '',
-    next_action_date: '',
-    last_action_date: '',
-    notes: ''
-  })
-  const [isLoading, setIsLoading] = useState<number | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   
   // Full edit dialog state
@@ -73,32 +66,13 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
     })
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'default'
-      case 'contacted':
-        return 'secondary'
-      case 'responded':
-        return 'outline'
-      case 'meeting_scheduled':
-        return 'destructive'
-      case 'member':
-        return 'default'
-      default:
-        return 'secondary'
+  const getStageBadgeVariant = (stage: string) => {
+    switch (stage) {
+      case 'Initial Outreach': return 'secondary'
+      case 'Forming the Relationship': return 'default'
+      case 'Maintaining the Relationship': return 'outline'
+      default: return 'secondary'
     }
-  }
-
-  const handleEditItem = (item: CtoPipelineItemWithContact) => {
-    setEditingItem(item.id)
-    setEditValues({
-      status: item.status,
-      next_action: item.next_action || '',
-      next_action_date: item.next_action_date ? item.next_action_date.split('T')[0] : '',
-      last_action_date: item.last_action_date ? item.last_action_date.split('T')[0] : '',
-      notes: item.notes || ''
-    })
   }
 
   const handleFullEdit = (item: CtoPipelineItemWithContact) => {
@@ -113,26 +87,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
       area: item.contacts.area && item.contacts.area.trim() !== '' ? item.contacts.area : 'none',
       general_notes: item.contacts.general_notes || ''
     })
-    setEditValues({
-      status: item.status,
-      next_action: item.next_action || '',
-      next_action_date: item.next_action_date ? item.next_action_date.split('T')[0] : '',
-      last_action_date: item.last_action_date ? item.last_action_date.split('T')[0] : '',
-      notes: item.notes || ''
-    })
     setIsFullEditOpen(true)
-  }
-
-  const handleSaveItem = async (id: number) => {
-    setIsLoading(id)
-    try {
-      await updatePipelineItem(id, editValues)
-      setEditingItem(null)
-    } catch (error) {
-      console.error('Error updating pipeline item:', error)
-    } finally {
-      setIsLoading(null)
-    }
   }
 
   const handleSaveFullEdit = async () => {
@@ -152,31 +107,16 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
       if (!contactResult.success) {
         throw new Error(contactResult.error || 'Failed to update contact')
       }
-
-      // Update pipeline details
-      await updatePipelineItem(editingContact.id, editValues)
       
       setIsFullEditOpen(false)
       setEditingContact(null)
       
-      // Refresh the page to show updates
-      window.location.reload()
+      // No need to reload - the component will update automatically
     } catch (error) {
       console.error('Error saving full edit:', error)
     } finally {
       setIsFullEditLoading(false)
     }
-  }
-
-  const handleCancelEdit = () => {
-    setEditingItem(null)
-    setEditValues({
-      status: '',
-      next_action: '',
-      next_action_date: '',
-      last_action_date: '',
-      notes: ''
-    })
   }
 
   const handleCancelFullEdit = () => {
@@ -192,21 +132,54 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
       area: '',
       general_notes: ''
     })
-    setEditValues({
-      status: '',
-      next_action: '',
-      next_action_date: '',
-      last_action_date: '',
-      notes: ''
-    })
   }
 
   const handleRemoveFromPipeline = async (id: number) => {
     try {
       await removeFromPipeline(id)
-      window.location.reload()
+      // No need to reload - the component will update automatically
     } catch (error) {
       console.error('Error removing from pipeline:', error)
+    }
+  }
+
+  // Add handler for inline updates with auto-status detection
+  const handleInlineUpdate = async (itemId: number, field: 'next_action' | 'next_action_date' | 'last_action_date', value: string) => {
+    const item = pipelineItems.find(p => p.id === itemId)
+    if (!item) return
+
+    try {
+      let updatedStatus = item.status
+      
+      // Auto-update status when next action is changed
+      if (field === 'next_action') {
+        console.log('=== CTO Stage Auto-update Debug ===')
+        console.log('Current stage:', item.status)
+        console.log('Selected action:', value)
+        console.log('Available actions in mapping:', Object.keys(RELATIONSHIP_ACTION_TO_STAGE_MAP))
+        
+        updatedStatus = getUpdatedRelationshipStage(item.status, value)
+        
+        console.log('Calculated new stage:', updatedStatus)
+        console.log('Stage changed:', item.status !== updatedStatus)
+        console.log('============================')
+      }
+      
+      const updatedValues = {
+        status: updatedStatus,
+        next_action: field === 'next_action' ? value : (item.next_action || ''),
+        next_action_date: field === 'next_action_date' ? value : (item.next_action_date || ''),
+        last_action_date: field === 'last_action_date' ? value : (item.last_action_date || ''),
+        notes: item.notes || ''
+      }
+
+      console.log('Sending update with values:', updatedValues)
+      await updatePipelineItem(itemId, updatedValues)
+      
+      // Don't reload to avoid tab reset - let the component update naturally
+    } catch (error) {
+      console.error('Failed to update pipeline item:', error)
+      throw error
     }
   }
 
@@ -273,7 +246,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
           <TableHeader>
             <TableRow>
               <TableHead>Name & Company</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Stage</TableHead>
               <TableHead>Next Action</TableHead>
               <TableHead>Next Action Date</TableHead>
               <TableHead>Last Action</TableHead>
@@ -324,95 +297,53 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
                   </div>
                 </TableCell>
                 <TableCell>
-                  {editingItem === item.id ? (
+                  <Badge variant={getStageBadgeVariant(item.status)}>
+                    {PIPELINE_STAGES.find(s => s.value === item.status)?.label || item.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="min-w-[200px]">
+                    {/* CTO-specific action selector */}
                     <Select 
-                      value={editValues.status} 
-                      onValueChange={(value) => setEditValues(prev => ({ ...prev, status: value }))}
+                      value={item.next_action || ''} 
+                      onValueChange={(value) => handleInlineUpdate(item.id, 'next_action', value)}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select action..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {CTO_PIPELINE_STATUSES.map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
-                            {status.label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(FOLLOW_UP_ACTIONS).map(([categoryKey, category]) => [
+                          <SelectItem key={`${categoryKey}-header`} value={`${categoryKey}-header`} disabled className="text-xs font-medium text-gray-500 bg-gray-50">
+                            {category.label}
+                          </SelectItem>,
+                          ...category.actions.map((action) => (
+                            <SelectItem key={`${categoryKey}-${action}`} value={action} className="text-sm pl-4">
+                              {action}
+                            </SelectItem>
+                          ))
+                        ]).flat()}
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <Badge variant={getStatusBadgeVariant(item.status)}>
-                      {CTO_PIPELINE_STATUSES.find(s => s.value === item.status)?.label || item.status}
-                    </Badge>
-                  )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  {editingItem === item.id ? (
-                    <Select 
-                      value={editValues.next_action} 
-                      onValueChange={(value) => setEditValues(prev => ({ ...prev, next_action: value }))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select action" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CTO_NEXT_ACTIONS.map((action) => (
-                          <SelectItem key={action} value={action}>
-                            {action}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className="text-sm">
-                      {item.next_action || 'No action set'}
-                    </span>
-                  )}
+                  <InlineDateEditor
+                    value={item.next_action_date}
+                    onSave={(value) => handleInlineUpdate(item.id, 'next_action_date', value)}
+                  />
                 </TableCell>
                 <TableCell>
-                  {editingItem === item.id ? (
-                    <Input
-                      type="date"
-                      value={editValues.next_action_date}
-                      onChange={(e) => setEditValues(prev => ({ ...prev, next_action_date: e.target.value }))}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3 text-gray-400" />
-                      <span className="text-sm">
-                        {formatDate(item.next_action_date)}
-                      </span>
-                    </div>
-                  )}
+                  <InlineDateEditor
+                    value={item.last_action_date}
+                    onSave={(value) => handleInlineUpdate(item.id, 'last_action_date', value)}
+                  />
                 </TableCell>
                 <TableCell>
-                  {editingItem === item.id ? (
-                    <Input
-                      type="date"
-                      value={editValues.last_action_date}
-                      onChange={(e) => setEditValues(prev => ({ ...prev, last_action_date: e.target.value }))}
-                    />
-                  ) : (
-                    <span className="text-sm">
-                      {formatDate(item.last_action_date)}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingItem === item.id ? (
-                    <Textarea
-                      value={editValues.notes}
-                      onChange={(e) => setEditValues(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Add notes..."
-                      className="min-h-[60px] min-w-[150px]"
-                    />
-                  ) : (
-                    <div className="max-w-[150px]">
-                      <p className="text-sm text-gray-600 truncate">
-                        {item.notes || 'No notes'}
-                      </p>
-                    </div>
-                  )}
+                  <div className="max-w-[150px]">
+                    <p className="text-sm text-gray-600 truncate">
+                      {item.notes || 'No notes'}
+                    </p>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
@@ -420,8 +351,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
                       variant="outline" 
                       size="sm"
                       onClick={() => handleFullEdit(item)}
-                      disabled={isLoading === item.id}
-                      title="Edit pipeline info"
+                      title="Edit contact & pipeline info"
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
@@ -443,10 +373,10 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
       <Dialog open={isFullEditOpen} onOpenChange={handleCancelFullEdit}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Contact & Pipeline Info</DialogTitle>
-            <DialogDescription>
-              Update both contact details and pipeline information for {editingContact?.contacts.name || editingContact?.contacts.email}
-            </DialogDescription>
+                      <DialogTitle>Edit Contact Information</DialogTitle>
+          <DialogDescription>
+            Update contact details for {editingContact?.contacts.name || editingContact?.contacts.email}
+          </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
@@ -554,75 +484,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
               </div>
             </div>
 
-            {/* Pipeline Information Section */}
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-lg font-medium">Pipeline Information</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={editValues.status} onValueChange={(value) => setEditValues(prev => ({ ...prev, status: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CTO_PIPELINE_STATUSES.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="next_action">Next Action</Label>
-                  <Select value={editValues.next_action} onValueChange={(value) => setEditValues(prev => ({ ...prev, next_action: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select action" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CTO_NEXT_ACTIONS.map((action) => (
-                        <SelectItem key={action} value={action}>
-                          {action}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="next_action_date">Next Action Date</Label>
-                  <Input
-                    id="next_action_date"
-                    type="date"
-                    value={editValues.next_action_date}
-                    onChange={(e) => setEditValues(prev => ({ ...prev, next_action_date: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last_action_date">Last Action Date</Label>
-                  <Input
-                    id="last_action_date"
-                    type="date"
-                    value={editValues.last_action_date}
-                    onChange={(e) => setEditValues(prev => ({ ...prev, last_action_date: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pipeline_notes">Pipeline Notes</Label>
-                <Textarea
-                  id="pipeline_notes"
-                  value={editValues.notes}
-                  onChange={(e) => setEditValues(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notes about the recruitment process..."
-                  className="min-h-[80px]"
-                />
-              </div>
-            </div>
           </div>
 
           <DialogFooter className="gap-2">

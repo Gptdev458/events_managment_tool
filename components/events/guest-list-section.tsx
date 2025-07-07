@@ -34,7 +34,8 @@ import {
   UserCheck,
   Users,
   CheckSquare,
-  Square
+  Square,
+  Edit
 } from 'lucide-react'
 import { INVITATION_STATUSES } from '@/lib/constants'
 import { Contact } from '@/lib/supabase'
@@ -42,6 +43,7 @@ import { ContactBusinessLogic } from '@/lib/business-logic'
 import { AddGuestDialog } from './add-guest-dialog'
 import { InvitationActionsDropdown } from './invitation-actions-dropdown'
 import { BulkEditDialog, type BulkEditMode } from './bulk-edit-dialog'
+import { EditContactDialog } from '@/components/contacts/edit-contact-dialog'
 
 interface Invitation {
   id: number
@@ -84,6 +86,8 @@ export function GuestListSection({
   const [selectedInvitationIds, setSelectedInvitationIds] = useState<number[]>([])
   const [showBulkEditDialog, setShowBulkEditDialog] = useState(false)
   const [bulkEditMode, setBulkEditMode] = useState<BulkEditMode>('status')
+
+
 
   const filteredInvitations = invitations.filter(invitation => {
     const contact = invitation.contacts
@@ -164,6 +168,11 @@ export function GuestListSection({
   const allFilteredSelected = filteredInvitations.length > 0 && 
     filteredInvitations.every(inv => selectedInvitationIds.includes(inv.id))
   const someFilteredSelected = filteredInvitations.some(inv => selectedInvitationIds.includes(inv.id))
+
+  const handleContactUpdated = () => {
+    // Refresh the page to see contact updates
+    window.location.reload()
+  }
 
   return (
     <Card>
@@ -295,10 +304,11 @@ export function GuestListSection({
                   </TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Company</TableHead>
+                  <TableHead>Area</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Invited By</TableHead>
                   <TableHead>New Connection</TableHead>
-                  <TableHead className="w-[70px]">Actions</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -357,6 +367,15 @@ export function GuestListSection({
                         </div>
                       </TableCell>
                       <TableCell>
+                        {contact.area ? (
+                          <Badge variant="secondary" className="capitalize">
+                            {contact.area}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {getStatusBadge(invitation.status)}
                       </TableCell>
                       <TableCell>
@@ -376,12 +395,18 @@ export function GuestListSection({
                         )}
                       </TableCell>
                       <TableCell>
-                        <InvitationActionsDropdown 
-                          invitation={invitation}
-                          eventStatus={eventStatus}
-                          isUpcoming={isUpcoming}
-                          isPast={isPast}
-                        />
+                        <div className="flex items-center gap-1">
+                          <EditContactDialog
+                            contact={contact}
+                            onContactUpdated={handleContactUpdated}
+                          />
+                          <InvitationActionsDropdown 
+                            invitation={invitation}
+                            eventStatus={eventStatus}
+                            isUpcoming={isUpcoming}
+                            isPast={isPast}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
@@ -425,6 +450,8 @@ export function GuestListSection({
         mode={bulkEditMode}
         onSuccess={handleBulkEditSuccess}
       />
+
+
     </Card>
   )
 } 

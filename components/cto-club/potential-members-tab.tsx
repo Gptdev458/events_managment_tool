@@ -107,8 +107,7 @@ export function PotentialMembersTab({
         pipelineForm.next_action_date || undefined
       )
       handlePipelineDialogClose()
-      // Refresh the page to show updated status
-      window.location.reload()
+      // No need to reload - the component will update automatically
     } catch (error) {
       console.error('Error adding to pipeline:', error)
     } finally {

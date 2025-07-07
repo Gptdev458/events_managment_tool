@@ -28,6 +28,7 @@ import { Calendar, Clock, ArrowUpDown, Search, Filter } from 'lucide-react'
 import { ContactBusinessLogic } from '@/lib/business-logic'
 import { Contact } from '@/lib/supabase'
 import { updatePipelineStage } from '@/lib/actions'
+import { getUpdatedRelationshipStage } from '@/lib/pipeline-stage-auto-update'
 
 interface PipelineItem {
   id: number
@@ -35,6 +36,7 @@ interface PipelineItem {
   pipeline_stage: string
   next_action_description: string | null
   next_action_date: string | null
+  last_action_date: string | null
   notes?: string | null
   created_at?: string | null
   contacts: Contact
@@ -45,7 +47,7 @@ interface PipelineTableProps {
   contacts: Contact[]
 }
 
-type SortField = 'name' | 'company' | 'stage' | 'next_action_date' | 'created_at'
+type SortField = 'name' | 'company' | 'stage' | 'next_action_date' | 'last_action_date'
 type SortDirection = 'asc' | 'desc'
 
 export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
@@ -99,9 +101,9 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
           aValue = a.next_action_date ? new Date(a.next_action_date).getTime() : 0
           bValue = b.next_action_date ? new Date(b.next_action_date).getTime() : 0
           break
-        case 'created_at':
-          aValue = 0  // No created_at field, so default to 0
-          bValue = 0
+        case 'last_action_date':
+          aValue = a.last_action_date ? new Date(a.last_action_date).getTime() : 0
+          bValue = b.last_action_date ? new Date(b.last_action_date).getTime() : 0
           break
         default:
           aValue = ''
@@ -139,33 +141,48 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
 
   const getStageBadgeVariant = (stage: string) => {
     switch (stage) {
-      case 'New Contact': return 'secondary'
       case 'Initial Outreach': return 'secondary'
-      case 'Connected': return 'default'
-      case 'Building Relationship': return 'default'
-      case 'Strong Relationship': return 'default'
-      case 'Strategic Partner': return 'default'
-      case 'Dormant': return 'outline'
+      case 'Forming the Relationship': return 'default'
+      case 'Maintaining the Relationship': return 'outline'
       default: return 'secondary'
     }
   }
 
-  // Add handler for inline updates
-  const handleInlineUpdate = async (itemId: number, field: 'next_action' | 'next_action_date', value: string) => {
+  // Add handler for inline updates with auto-stage detection
+  const handleInlineUpdate = async (itemId: number, field: 'next_action' | 'next_action_date' | 'last_action_date', value: string) => {
     const item = pipeline.find(p => p.id === itemId)
     if (!item) return
 
     try {
+      let updatedStage = item.pipeline_stage
+      
+      // Auto-update stage when next action is changed
+      if (field === 'next_action') {
+        console.log('Event Auto-update: Current stage:', item.pipeline_stage, 'Action:', value)
+        updatedStage = getUpdatedRelationshipStage(item.pipeline_stage, value)
+        console.log('Event Auto-update: New stage:', updatedStage)
+      }
+      
       const formData = new FormData()
       formData.append('contact_id', item.contact_id)
-      formData.append('pipeline_stage', item.pipeline_stage)
+      formData.append('pipeline_stage', updatedStage)
       
       if (field === 'next_action') {
         formData.append('next_action_description', value)
         formData.append('next_action_date', item.next_action_date || new Date().toISOString())
-      } else {
+        if (item.last_action_date) {
+          formData.append('last_action_date', item.last_action_date)
+        }
+      } else if (field === 'next_action_date') {
         formData.append('next_action_description', item.next_action_description || '')
         formData.append('next_action_date', value)
+        if (item.last_action_date) {
+          formData.append('last_action_date', item.last_action_date)
+        }
+      } else if (field === 'last_action_date') {
+        formData.append('next_action_description', item.next_action_description || '')
+        formData.append('next_action_date', item.next_action_date || new Date().toISOString())
+        formData.append('last_action_date', value)
       }
 
       const result = await updatePipelineStage(itemId, formData)
@@ -173,8 +190,7 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
         throw new Error(result.error || 'Failed to update')
       }
       
-      // Refresh the page to see changes
-      window.location.reload()
+      // No need to reload - the component will update automatically
     } catch (error) {
       console.error('Failed to update pipeline item:', error)
       throw error
@@ -273,10 +289,20 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
               <TableHead>
                 <Button
                   variant="ghost"
+                  onClick={() => handleSort('last_action_date')}
+                  className="h-auto p-0 font-semibold"
+                >
+                  Last Action Date
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
                   onClick={() => handleSort('next_action_date')}
                   className="h-auto p-0 font-semibold"
                 >
-                  Due Date
+                  Next Action Date
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
@@ -320,7 +346,7 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStageBadgeVariant(item.pipeline_stage)}>
+                    <Badge variant={getStageBadgeVariant(item.pipeline_stage)} className="whitespace-normal break-words max-w-[150px] text-center">
                       {item.pipeline_stage}
                     </Badge>
                   </TableCell>
@@ -328,6 +354,12 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
                     <InlineActionEditor
                       value={item.next_action_description || ''}
                       onSave={(value) => handleInlineUpdate(item.id, 'next_action', value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineDateEditor
+                      value={item.last_action_date}
+                      onSave={(value) => handleInlineUpdate(item.id, 'last_action_date', value)}
                     />
                   </TableCell>
                   <TableCell>
@@ -349,7 +381,8 @@ export function PipelineTable({ pipeline, contacts }: PipelineTableProps) {
                         next_action: item.next_action_description || '',
                         next_action_date: item.next_action_date || new Date().toISOString(),
                         notes: item.notes || '',
-                        created_at: item.created_at || new Date().toISOString()
+                        created_at: item.created_at || new Date().toISOString(),
+                        last_action_date: item.last_action_date || ''
                       }} />
                       <RemoveFromPipelineDialog pipelineItem={{
                         ...item,

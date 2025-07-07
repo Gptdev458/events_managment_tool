@@ -67,6 +67,20 @@ export function EditContactDialog({
     },
   })
 
+  // Watch for CTO club checkbox changes and auto-update contact type
+  const watchIsCtoClub = form.watch('is_in_cto_club')
+  useEffect(() => {
+    if (watchIsCtoClub) {
+      form.setValue('contact_type', 'cto_club_member')
+    } else {
+      // Only clear contact_type if it was set to cto_club_member
+      const currentContactType = form.getValues('contact_type')
+      if (currentContactType === 'cto_club_member') {
+        form.setValue('contact_type', null)
+      }
+    }
+  }, [watchIsCtoClub, form])
+
   // Reset form when contact changes or dialog opens
   useEffect(() => {
     if (open) {

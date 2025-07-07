@@ -44,13 +44,9 @@ export const INVITATION_STATUSES = [
 
 // Pipeline Stages - for relationship building journey
 export const PIPELINE_STAGES = [
-  { value: 'New Contact', label: 'New Contact' },
   { value: 'Initial Outreach', label: 'Initial Outreach' },
-  { value: 'Connected', label: 'Connected' },
-  { value: 'Building Relationship', label: 'Building Relationship' },
-  { value: 'Strong Relationship', label: 'Strong Relationship' },
-  { value: 'Strategic Partner', label: 'Strategic Partner' },
-  { value: 'Dormant', label: 'Dormant' },
+  { value: 'Forming the Relationship', label: 'Forming the Relationship' },
+  { value: 'Maintaining the Relationship', label: 'Maintaining the Relationship' },
 ] as const
 
 // Follow-up Actions - organized by relationship stage

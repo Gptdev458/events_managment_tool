@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { addContactToEvent, getContactEventHistory } from '@/lib/actions'
 import { INVITATION_STATUSES, CONTACT_TYPES, EVENT_TYPES } from '@/lib/constants'
+import { CONTACT_AREA_OPTIONS } from '@/lib/contact-area-utils'
 import { Contact } from '@/lib/supabase'
 import { ContactBusinessLogic } from '@/lib/business-logic'
 import { useRouter } from 'next/navigation'
@@ -60,10 +61,12 @@ export function AddGuestDialog({
   const [searchTerm, setSearchTerm] = useState('')
   const [contactTypeFilter, setContactTypeFilter] = useState<string>('all')
   const [eventTypeAttendedFilter, setEventTypeAttendedFilter] = useState<string>('all')
+  const [areaFilter, setAreaFilter] = useState<string>('all')
   const [contactEventHistory, setContactEventHistory] = useState<ContactEventHistory>({})
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
   const router = useRouter()
 
   // Load event history for filtering when dialog opens
@@ -123,8 +126,11 @@ export function AddGuestDialog({
         matchesEventTypeAttended = attendedEventTypes.includes(eventTypeAttendedFilter)
       }
     }
+
+    // Area filter
+    const matchesArea = areaFilter === 'all' || contact.area === areaFilter
     
-    return matchesSearch && matchesContactType && matchesEventTypeAttended
+    return matchesSearch && matchesContactType && matchesEventTypeAttended && matchesArea
   })
 
   const getContactTypeLabel = (value: string | null) => {
@@ -215,9 +221,12 @@ export function AddGuestDialog({
     setSearchTerm('')
     setContactTypeFilter('all')
     setEventTypeAttendedFilter('all')
+    setAreaFilter('all')
     setError(null)
     onOpenChange(false)
   }
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -309,6 +318,23 @@ export function AddGuestDialog({
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="area_filter">Area</Label>
+                <Select value={areaFilter} onValueChange={setAreaFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Area</SelectItem>
+                    {CONTACT_AREA_OPTIONS.map((area) => (
+                      <SelectItem key={area.value} value={area.value}>
+                        {area.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Selected Count */}
@@ -329,6 +355,20 @@ export function AddGuestDialog({
                 {error}
               </div>
             )}
+
+            {/* Create New Contact */}
+            <div className="border-t pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => window.open('/contacts', '_blank')} 
+                disabled={isPending}
+                className="w-full"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create New Contact
+              </Button>
+            </div>
 
             {/* Actions */}
             <div className="space-y-2">
@@ -428,6 +468,11 @@ export function AddGuestDialog({
                               <Badge variant="outline" className="text-xs">
                                 {getContactTypeLabel(contact.contact_type)}
                               </Badge>
+                              {contact.area && (
+                                <Badge variant="secondary" className="text-xs capitalize">
+                                  {contact.area}
+                                </Badge>
+                              )}
                               {attendedEventTypes.length > 0 && (
                                 <Badge variant="secondary" className="text-xs">
                                   {attendedEventTypes.length} event{attendedEventTypes.length !== 1 ? 's' : ''}
@@ -471,7 +516,7 @@ export function AddGuestDialog({
                 </div>
               ) : (
                 <div className="p-12 text-center text-muted-foreground">
-                  {searchTerm || contactTypeFilter !== 'all' || eventTypeAttendedFilter !== 'all' ? (
+                  {searchTerm || contactTypeFilter !== 'all' || eventTypeAttendedFilter !== 'all' || areaFilter !== 'all' ? (
                     <div>
                       <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <h3 className="font-medium mb-2">No contacts match your criteria</h3>
@@ -490,6 +535,8 @@ export function AddGuestDialog({
           </div>
         </form>
       </DialogContent>
+
+
     </Dialog>
   )
 } 

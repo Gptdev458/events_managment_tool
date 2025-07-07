@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -51,6 +51,20 @@ export function AddContactDialog() {
       additional_emails: '',
     },
   })
+
+  // Watch for CTO club checkbox changes and auto-update contact type
+  const watchIsCtoClub = form.watch('is_in_cto_club')
+  useEffect(() => {
+    if (watchIsCtoClub) {
+      form.setValue('contact_type', 'cto_club_member')
+    } else {
+      // Only clear contact_type if it was set to cto_club_member
+      const currentContactType = form.getValues('contact_type')
+      if (currentContactType === 'cto_club_member') {
+        form.setValue('contact_type', null)
+      }
+    }
+  }, [watchIsCtoClub, form])
 
   async function onSubmit(values: ContactFormValues) {
     setIsSubmitting(true)

@@ -80,8 +80,7 @@ export function AddToPipelineDialog({ availableContacts }: AddToPipelineDialogPr
       if (result.success) {
         setOpen(false)
         form.reset()
-        // Refresh the page to see the new pipeline entry
-        window.location.reload()
+        // No need to reload - the component will update automatically
       } else {
         form.setError('root', { 
           type: 'manual', 

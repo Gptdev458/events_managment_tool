@@ -34,6 +34,7 @@ const EditActivityDialog = lazy(() => import('./edit-activity-dialog').then(modu
 const CreateTaskDialog = lazy(() => import('./create-task-dialog').then(module => ({ default: module.CreateTaskDialog })))
 const EditTaskDialog = lazy(() => import('./edit-task-dialog').then(module => ({ default: module.EditTaskDialog })))
 const AddTagDialog = lazy(() => import('./add-tag-dialog').then(module => ({ default: module.AddTagDialog })))
+const EditContactDialog = lazy(() => import('../contacts/edit-contact-dialog').then(module => ({ default: module.EditContactDialog })))
 
 interface VipDetailTabsProps {
   contact: Contact
@@ -53,6 +54,8 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
   const [showAddTagDialog, setShowAddTagDialog] = useState(false)
   const [showEditInitiativeDialog, setShowEditInitiativeDialog] = useState(false)
   const [selectedInitiative, setSelectedInitiative] = useState<VipInitiative | null>(null)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [currentContact, setCurrentContact] = useState<Contact>(contact)
 
   // Memoized filtered initiatives to prevent unnecessary recalculations
   const giveInitiatives = useMemo(() => 
@@ -78,6 +81,8 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
       setLoading(false)
     }
   }, [contact.id])
+
+
 
   useEffect(() => {
     const loadVipData = async () => {
@@ -106,7 +111,11 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* VIP Header */}
-      <VipHeader contact={contact} onAddActivity={() => setShowCreateActivityDialog(true)} />
+      <VipHeader 
+        contact={currentContact} 
+        onAddActivity={() => setShowCreateActivityDialog(true)}
+        onEditProfile={() => setEditingContact(currentContact)}
+      />
       
       {/* Tabs */}
       <Tabs defaultValue="dashboard" className="w-full">
@@ -144,7 +153,7 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
         
         <TabsContent value="profile" className="mt-6">
           <VipProfile 
-            contact={contact} 
+            contact={currentContact} 
             tags={tags}
             onRefresh={refreshData}
             onAddTag={() => setShowAddTagDialog(true)}
@@ -243,11 +252,23 @@ export function VipDetailTabs({ contact }: VipDetailTabsProps) {
           onSuccess={refreshData}
         />
       </Suspense>
+
+      {/* Edit Contact Dialog */}
+      {editingContact && (
+        <EditContactDialog
+          contact={editingContact}
+          onContactUpdated={(updatedContact) => {
+            setCurrentContact(updatedContact)
+            setEditingContact(null)
+            refreshData() // Refresh VIP data after contact update
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function VipHeader({ contact, onAddActivity }: { contact: Contact, onAddActivity: () => void }) {
+function VipHeader({ contact, onAddActivity, onEditProfile }: { contact: Contact, onAddActivity: () => void, onEditProfile: () => void }) {
   const displayName = contact.name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unnamed Contact'
   
   return (
@@ -303,7 +324,7 @@ function VipHeader({ contact, onAddActivity }: { contact: Contact, onAddActivity
           
           {/* Quick Actions */}
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={onEditProfile}>
               <Edit className="mr-2 h-4 w-4" />
               Edit Profile
             </Button>
