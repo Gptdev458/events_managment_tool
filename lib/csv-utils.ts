@@ -40,9 +40,9 @@ export const CSVExport = {
       contact.area || '',
       contact.linkedin_url || '',
       contact.is_in_cto_club ? 'Yes' : 'No',
-      Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : (contact.current_projects || ''),
-      Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : (contact.goals_aspirations || ''),
-      Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : (contact.our_strategic_goals || ''),
+      Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : String(contact.current_projects || ''),
+      Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : String(contact.goals_aspirations || ''),
+      Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : String(contact.our_strategic_goals || ''),
       (contact.general_notes || '').replace(/"/g, '""'), // Escape quotes
       UtilityLogic.formatDate(contact.created_at)
     ])
@@ -522,9 +522,9 @@ export function contactToCSVRow(contact: Contact): string[] {
     contact.area || '',
     contact.linkedin_url || '',
     contact.is_in_cto_club ? 'Yes' : 'No',
-    Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : (contact.current_projects || ''),
-    Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : (contact.goals_aspirations || ''),
-    Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : (contact.our_strategic_goals || ''),
+    Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : String(contact.current_projects || ''),
+    Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : String(contact.goals_aspirations || ''),
+    Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : String(contact.our_strategic_goals || ''),
     (contact.general_notes || '').replace(/"/g, '""') // Escape quotes
   ]
 }

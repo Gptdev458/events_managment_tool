@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, UserPlus, TrendingUp } from "lucide-react"
+import { Users, UserPlus, TrendingUp, Target } from "lucide-react"
 import { getCtoClubCurrentMembers, getCtoPotentialMembers, getCtoPipelineItems, getCtoClubStats } from "@/lib/cto-club-actions"
 import { getContacts } from "@/lib/actions"
 import { CurrentMembersTab } from "@/components/cto-club/current-members-tab"
 import { PotentialMembersTab } from "@/components/cto-club/potential-members-tab"
 import { PipelineTab } from "@/components/cto-club/pipeline-tab"
+import { MemberEngagementTab } from "@/components/cto-club/member-engagement-tab"
 
 export default async function CtoClubPage() {
   // Fetch all data in parallel
@@ -129,6 +130,13 @@ export default async function CtoClubPage() {
             <TrendingUp className="h-4 w-4 mr-2" />
             Pipeline
           </TabsTrigger>
+          <TabsTrigger 
+            value="member-engagement"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Member Engagement
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="current-members" className="mt-6">
@@ -149,6 +157,10 @@ export default async function CtoClubPage() {
             pipelineItems={pipelineItems}
             availableContacts={availableForPipeline}
           />
+        </TabsContent>
+
+        <TabsContent value="member-engagement" className="mt-6">
+          <MemberEngagementTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -119,9 +119,9 @@ export function CSVImportExport({ contacts }: CSVImportExportProps) {
           formData.append('area', contact.area || '')
           formData.append('linkedin_url', contact.linkedin_url || '')
           formData.append('is_in_cto_club', contact.is_in_cto_club ? 'true' : 'false')
-          formData.append('current_projects', Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : (contact.current_projects || ''))
-          formData.append('goals_aspirations', Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : (contact.goals_aspirations || ''))
-          formData.append('our_strategic_goals', Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : (contact.our_strategic_goals || ''))
+          formData.append('current_projects', Array.isArray(contact.current_projects) ? contact.current_projects.join(', ') : String(contact.current_projects || ''))
+          formData.append('goals_aspirations', Array.isArray(contact.goals_aspirations) ? contact.goals_aspirations.join(', ') : String(contact.goals_aspirations || ''))
+          formData.append('our_strategic_goals', Array.isArray(contact.our_strategic_goals) ? contact.our_strategic_goals.join(', ') : String(contact.our_strategic_goals || ''))
           formData.append('general_notes', contact.general_notes || '')
 
           console.log(`Importing contact ${i + 1}:`, {

@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       contacts: {
@@ -16,18 +21,18 @@ export type Database = {
           company: string | null
           contact_type: string | null
           created_at: string | null
-          current_projects: string[] | string | null
+          current_projects: Json | null
           email: string | null
           first_name: string | null
           general_notes: string | null
-          goals_aspirations: string[] | string | null
+          goals_aspirations: Json | null
           id: string
           is_in_cto_club: boolean | null
           job_title: string | null
           last_name: string | null
           linkedin_url: string | null
           name: string | null
-          our_strategic_goals: string[] | string | null
+          our_strategic_goals: Json | null
         }
         Insert: {
           additional_emails?: string[] | null
@@ -35,18 +40,18 @@ export type Database = {
           company?: string | null
           contact_type?: string | null
           created_at?: string | null
-          current_projects?: string[] | string | null
+          current_projects?: Json | null
           email?: string | null
           first_name?: string | null
           general_notes?: string | null
-          goals_aspirations?: string[] | string | null
+          goals_aspirations?: Json | null
           id?: string
           is_in_cto_club?: boolean | null
           job_title?: string | null
           last_name?: string | null
           linkedin_url?: string | null
           name?: string | null
-          our_strategic_goals?: string[] | string | null
+          our_strategic_goals?: Json | null
         }
         Update: {
           additional_emails?: string[] | null
@@ -54,20 +59,82 @@ export type Database = {
           company?: string | null
           contact_type?: string | null
           created_at?: string | null
-          current_projects?: string[] | string | null
+          current_projects?: Json | null
           email?: string | null
           first_name?: string | null
           general_notes?: string | null
-          goals_aspirations?: string[] | string | null
+          goals_aspirations?: Json | null
           id?: string
           is_in_cto_club?: boolean | null
           job_title?: string | null
           last_name?: string | null
           linkedin_url?: string | null
           name?: string | null
-          our_strategic_goals?: string[] | string | null
+          our_strategic_goals?: Json | null
         }
         Relationships: []
+      }
+      cto_club_engagement_initiatives: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          status: Database["public"]["Enums"]["cto_club_initiative_status"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["cto_club_initiative_status"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["cto_club_initiative_status"]
+          title?: string
+        }
+        Relationships: []
+      }
+      cto_club_engagement_tasks: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          initiative_id: string
+          name: string
+          notes: string | null
+          status: Database["public"]["Enums"]["cto_club_task_status"]
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          initiative_id: string
+          name: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["cto_club_task_status"]
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          initiative_id?: string
+          name?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["cto_club_task_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_club_engagement_tasks_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "cto_club_engagement_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cto_club_pipeline: {
         Row: {
@@ -449,6 +516,12 @@ export type Database = {
     }
     Enums: {
       contact_area: "engineering" | "founders" | "product"
+      cto_club_initiative_status:
+        | "active"
+        | "on_hold"
+        | "completed"
+        | "archived"
+      cto_club_task_status: "to_do" | "in_progress" | "done" | "cancelled"
       vip_activity_type:
         | "meeting"
         | "call"
@@ -466,21 +539,23 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -498,14 +573,14 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -521,14 +596,14 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -544,14 +619,14 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -559,14 +634,14 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
@@ -615,6 +690,20 @@ export type CtoClubPipelineInsert = TablesInsert<'cto_club_pipeline'>
 
 export type CtoClubPotentialMemberUpdate = TablesUpdate<'cto_club_potential_members'>
 export type CtoClubPipelineUpdate = TablesUpdate<'cto_club_pipeline'>
+
+// CTO Club Engagement Types
+export type CtoClubEngagementInitiative = Tables<'cto_club_engagement_initiatives'>
+export type CtoClubEngagementTask = Tables<'cto_club_engagement_tasks'>
+
+export type CtoClubEngagementInitiativeInsert = TablesInsert<'cto_club_engagement_initiatives'>
+export type CtoClubEngagementTaskInsert = TablesInsert<'cto_club_engagement_tasks'>
+
+export type CtoClubEngagementInitiativeUpdate = TablesUpdate<'cto_club_engagement_initiatives'>
+export type CtoClubEngagementTaskUpdate = TablesUpdate<'cto_club_engagement_tasks'>
+
+// CTO Club Engagement Enum Types
+export type CtoClubInitiativeStatus = Database['public']['Enums']['cto_club_initiative_status']
+export type CtoClubTaskStatus = Database['public']['Enums']['cto_club_task_status']
 
 // ========= ENUM EXPORTS =========
 export type ContactArea = Database['public']['Enums']['contact_area']
