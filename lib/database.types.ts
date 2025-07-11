@@ -343,6 +343,7 @@ export type Database = {
         Row: {
           contact_id: string
           id: number
+          last_action_date: string | null
           next_action_date: string | null
           next_action_description: string | null
           pipeline_stage: string
@@ -350,6 +351,7 @@ export type Database = {
         Insert: {
           contact_id: string
           id?: never
+          last_action_date?: string | null
           next_action_date?: string | null
           next_action_description?: string | null
           pipeline_stage: string
@@ -357,6 +359,7 @@ export type Database = {
         Update: {
           contact_id?: string
           id?: never
+          last_action_date?: string | null
           next_action_date?: string | null
           next_action_description?: string | null
           pipeline_stage?: string
