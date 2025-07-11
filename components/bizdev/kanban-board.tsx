@@ -39,15 +39,94 @@ function KanbanColumn({
   onTaskStatusUpdate, 
   onTaskEdit 
 }: KanbanColumnProps) {
+  const [isDragOver, setIsDragOver] = useState(false)
+
   const handleTaskMove = async (taskId: string, newStatus: keyof KanbanBoardData) => {
     if (newStatus !== status) {
       await onTaskStatusUpdate(taskId, newStatus)
     }
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    setIsDragOver(true)
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only remove drag-over state if we're actually leaving the container
+    const container = e.currentTarget as HTMLElement
+    if (!container.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false)
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    console.log('🔴 DROP EVENT FIRED!', status)
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const taskId = e.dataTransfer.getData('text/plain')
+    console.log('   Dragged task ID:', taskId, 'to status:', status)
+
+    if (!taskId) {
+      console.error('❌ No task ID found in drop event')
+      return
+    }
+
+    // Find the dragged card element
+    const draggedCard = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement
+    if (!draggedCard) {
+      console.error('❌ Could not find dragged card element')
+      return
+    }
+
+    const currentContainer = draggedCard.parentElement?.closest('.cards-container')
+    const currentStatus = currentContainer?.getAttribute('data-status')
+
+    console.log('   Moving from', currentStatus, 'to', status)
+
+    // Don't process if dropping in the same container
+    if (currentStatus === status) {
+      console.log('⚠️ Dropped in same container, no action needed')
+      return
+    }
+
+    // Update task status
+    try {
+      await onTaskStatusUpdate(taskId, status)
+      console.log('✅ Task status updated successfully')
+      
+      // Add success animation
+      draggedCard.classList.add('card-move-success')
+      setTimeout(() => {
+        draggedCard.classList.remove('card-move-success')
+      }, 500)
+      
+    } catch (error) {
+      console.error('❌ Failed to update task status:', error)
+      
+      // Add error feedback
+      draggedCard.style.border = '2px solid #ef4444'
+      setTimeout(() => {
+        draggedCard.style.border = ''
+      }, 1000)
+    }
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      <div className={cn("p-4 rounded-t-lg border-b-2", color)}>
+    <div className="flex flex-col">
+      <div className={cn("column-header p-3 rounded-t-lg border-b-2", `${status}-header`, color)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon}
@@ -67,7 +146,17 @@ function KanbanColumn({
         </div>
       </div>
       
-      <div className="flex-1 p-2 space-y-3 bg-gray-50 min-h-[400px] overflow-y-auto">
+      <div 
+        className={cn(
+          "p-3 space-y-3 bg-gray-50 cards-container",
+          isDragOver && "drag-over"
+        )}
+        data-status={status}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {tasks.map((task) => (
           <TaskCard 
             key={task.id} 
@@ -77,7 +166,7 @@ function KanbanColumn({
           />
         ))}
         
-        {tasks.length === 0 && (
+        {tasks.length === 0 && !isDragOver && (
           <div className="text-center py-8 text-gray-500 text-sm">
             No {title.toLowerCase()} tasks
           </div>
@@ -94,104 +183,64 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, onMove, onEdit }: TaskCardProps) {
-  const getProject = () => {
-    // In a real implementation, you'd get this from the task's project relationship
-    return null
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragStart = (e: React.DragEvent) => {
+    console.log('🟢 DRAGSTART EVENT FIRED!', task.id)
+    setIsDragging(true)
+    
+    // Set drag data
+    e.dataTransfer.setData('text/plain', task.id)
+    e.dataTransfer.effectAllowed = 'move'
+    
+    // Add visual feedback
+    const element = e.currentTarget as HTMLElement
+    element.style.opacity = '0.5'
+    element.style.transform = 'rotate(2deg)'
   }
 
-  const getStatusActions = (currentStatus: string) => {
-    const actions = []
+  const handleDragEnd = (e: React.DragEvent) => {
+    console.log('🏁 DRAGEND EVENT FIRED!', task.id)
+    setIsDragging(false)
     
-    if (currentStatus !== 'todo') {
-      actions.push({ status: 'todo', label: 'To Do', icon: Clock })
-    }
-    if (currentStatus !== 'doing') {
-      actions.push({ status: 'doing', label: 'Doing', icon: Play })
-    }
-    if (currentStatus !== 'waiting') {
-      actions.push({ status: 'waiting', label: 'Waiting', icon: Pause })
-    }
-    if (currentStatus !== 'done') {
-      actions.push({ status: 'done', label: 'Done', icon: CheckCircle })
-    }
-    
-    return actions
+    // Reset visual feedback
+    const element = e.currentTarget as HTMLElement
+    element.style.opacity = '1'
+    element.style.transform = ''
   }
-
-  const statusActions = getStatusActions(task.status || 'todo')
-  const subtaskCount = task.subtasks?.length || 0
-  const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
 
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow bg-white">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium leading-tight">{task.text}</p>
+    <Card 
+      className={cn(
+        "kanban-card cursor-move hover:shadow-md transition-shadow bg-white border border-gray-200 group",
+        isDragging && "dragging opacity-50"
+      )}
+      draggable={true}
+      data-task-id={task.id}
+      data-project-id={task.project_id}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <CardContent className="p-4">
+        {/* Task Text - Main Content */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 leading-normal break-words whitespace-normal">
+              {task.text?.trim() || 'Untitled Task'}
+            </p>
+          </div>
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-            onClick={() => onEdit(task)}
+            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-100 shrink-0"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(task)
+            }}
+            title="Edit"
           >
             <Edit className="h-3 w-3" />
           </Button>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        <div className="space-y-3">
-          {/* Project Info */}
-          {getProject() && (
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                {/* {getProject()?.name} */}
-              </Badge>
-              {/* {getProject()?.is_ian_collaboration && (
-                <Badge variant="secondary" className="text-xs">
-                  <Users className="w-3 h-3 mr-1" />
-                  Ian
-                </Badge>
-              )} */}
-            </div>
-          )}
-          
-          {/* Subtasks Progress */}
-          {subtaskCount > 0 && (
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <CheckCircle className="h-3 w-3" />
-              <span>{completedSubtasks}/{subtaskCount} subtasks</span>
-              <div className="flex-1 bg-gray-200 rounded-full h-1">
-                <div 
-                  className="bg-green-500 h-1 rounded-full transition-all"
-                  style={{ width: `${subtaskCount > 0 ? (completedSubtasks / subtaskCount) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-          )}
-          
-          {/* Completion Status */}
-          {task.completed && (
-            <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Completed
-            </Badge>
-          )}
-          
-          {/* Status Change Actions */}
-          <div className="flex flex-wrap gap-1">
-            {statusActions.map((action) => (
-              <Button
-                key={action.status}
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs"
-                onClick={() => onMove(task.id, action.status as keyof KanbanBoardData)}
-              >
-                <action.icon className="h-3 w-3 mr-1" />
-                {action.label}
-              </Button>
-            ))}
-          </div>
         </div>
       </CardContent>
     </Card>
@@ -238,9 +287,9 @@ export function KanbanBoard({ kanbanData, projects }: KanbanBoardProps) {
         <AddTaskDialog projects={projects} />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[600px]">
+      <div className="kanban-board grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map((column) => (
-          <div key={column.id} className="border rounded-lg overflow-hidden bg-white">
+          <div key={column.id} className="border rounded-lg overflow-hidden bg-white shadow-sm h-fit">
             <KanbanColumn
               title={column.label}
               tasks={column.tasks}
@@ -248,6 +297,91 @@ export function KanbanBoard({ kanbanData, projects }: KanbanBoardProps) {
               color={column.color}
               icon={column.icon}
               projects={projects}
+              onTaskStatusUpdate={handleTaskStatusUpdate}
+              onTaskEdit={setEditingTask}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Edit Task Dialog */}
+      {editingTask && (
+        <EditTaskDialog
+          task={editingTask}
+          open={!!editingTask}
+          onOpenChange={(open) => !open && setEditingTask(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+interface ProjectKanbanBoardProps {
+  projectId: string
+  project: Project
+  kanbanData: KanbanBoardData
+  onRefresh?: () => void
+}
+
+export function ProjectKanbanBoard({ projectId, project, kanbanData, onRefresh }: ProjectKanbanBoardProps) {
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+
+  const handleTaskStatusUpdate = async (taskId: string, newStatus: keyof KanbanBoardData) => {
+    try {
+      await updateTaskStatus(taskId, newStatus, newStatus === 'done')
+      onRefresh?.()
+    } catch (error) {
+      console.error('Failed to update task status:', error)
+    }
+  }
+
+  const columns = BIZDEV_CONSTANTS.KANBAN_COLUMNS.map(column => ({
+    ...column,
+    tasks: kanbanData[column.id as keyof KanbanBoardData] || [],
+    icon: getColumnIcon(column.id),
+  }))
+
+  function getColumnIcon(columnId: string) {
+    switch (columnId) {
+      case 'todo': return <Clock className="h-4 w-4" />
+      case 'doing': return <Play className="h-4 w-4" />
+      case 'waiting': return <Pause className="h-4 w-4" />
+      case 'done': return <CheckCircle className="h-4 w-4" />
+      default: return <Clock className="h-4 w-4" />
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-semibold">Project Tasks - Kanban Board</h3>
+          <p className="text-sm text-gray-600">
+            {project.name} task management
+          </p>
+        </div>
+        <AddTaskDialog 
+          projects={[project]} 
+          defaultProjectId={projectId}
+          triggerButton={
+            <Button size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Add Task
+            </Button>
+          }
+        />
+      </div>
+      
+      <div className="kanban-board grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {columns.map((column) => (
+          <div key={column.id} className="border rounded-lg overflow-hidden bg-white shadow-sm h-fit">
+            <KanbanColumn
+              title={column.label}
+              tasks={column.tasks}
+              status={column.id as keyof KanbanBoardData}
+              color={column.color}
+              icon={column.icon}
+              projects={[project]}
               onTaskStatusUpdate={handleTaskStatusUpdate}
               onTaskEdit={setEditingTask}
             />

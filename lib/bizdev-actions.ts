@@ -41,7 +41,7 @@ const projectSchema = z.object({
 const taskSchema = z.object({
   project_id: z.string().uuid('Invalid project ID'),
   text: z.string().min(1, 'Task text is required'),
-  status: z.enum(['to-do', 'doing', 'waiting-feedback', 'done']).optional(),
+  status: z.enum(['todo', 'doing', 'waiting', 'done']).optional(),
   completed: z.boolean().optional(),
   parent_task_id: z.string().uuid().optional(),
   order: z.number().optional(),
@@ -569,6 +569,55 @@ export async function getKanbanBoardData(): Promise<KanbanBoardData> {
     return kanbanData
   } catch (error) {
     logger.serverActionError('getKanbanBoardData', error instanceof Error ? error : new Error('Unknown error'))
+    return { todo: [], doing: [], waiting: [], done: [] }
+  }
+}
+
+export async function getProjectKanbanData(projectId: string): Promise<KanbanBoardData> {
+  try {
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        projects:project_id (
+          id,
+          name,
+          priority,
+          is_ian_collaboration
+        )
+      `)
+      .eq('project_id', projectId)
+      .order('order', { ascending: true })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    const kanbanData: KanbanBoardData = {
+      todo: [],
+      doing: [],
+      waiting: [],
+      done: []
+    }
+
+    tasks?.forEach(task => {
+      const taskWithSubtasks: TaskWithSubtasks = {
+        ...task,
+        subtasks: tasks.filter(t => t.parent_task_id === task.id)
+      }
+
+      // Only include top-level tasks in kanban
+      if (!task.parent_task_id) {
+        const status = task.status as keyof KanbanBoardData
+        if (status in kanbanData) {
+          kanbanData[status].push(taskWithSubtasks)
+        }
+      }
+    })
+
+    return kanbanData
+  } catch (error) {
+    logger.serverActionError('getProjectKanbanData', error instanceof Error ? error : new Error('Unknown error'))
     return { todo: [], doing: [], waiting: [], done: [] }
   }
 }

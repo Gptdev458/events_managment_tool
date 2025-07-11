@@ -167,7 +167,7 @@ export const BIZDEV_CONSTANTS = {
   KANBAN_COLUMNS: [
     { id: 'todo', label: 'To Do', color: 'bg-gray-100' },
     { id: 'doing', label: 'Doing', color: 'bg-blue-100' },
-    { id: 'waiting', label: 'Waiting', color: 'bg-yellow-100' },
+    { id: 'waiting', label: 'Waiting Feedback', color: 'bg-yellow-100' },
     { id: 'done', label: 'Done', color: 'bg-green-100' },
   ] as const,
   
