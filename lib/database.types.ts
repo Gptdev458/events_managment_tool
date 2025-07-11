@@ -300,11 +300,49 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          detailed_ratings_data: Json | null
+          id: string
+          is_ian_collaboration: boolean
+          name: string
+          priority: string | null
+          rating: number | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          detailed_ratings_data?: Json | null
+          id?: string
+          is_ian_collaboration?: boolean
+          name: string
+          priority?: string | null
+          rating?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          detailed_ratings_data?: Json | null
+          id?: string
+          is_ian_collaboration?: boolean
+          name?: string
+          priority?: string | null
+          rating?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       relationship_pipeline: {
         Row: {
           contact_id: string
           id: number
-          last_action_date: string | null
           next_action_date: string | null
           next_action_description: string | null
           pipeline_stage: string
@@ -312,7 +350,6 @@ export type Database = {
         Insert: {
           contact_id: string
           id?: never
-          last_action_date?: string | null
           next_action_date?: string | null
           next_action_description?: string | null
           pipeline_stage: string
@@ -320,7 +357,6 @@ export type Database = {
         Update: {
           contact_id?: string
           id?: never
-          last_action_date?: string | null
           next_action_date?: string | null
           next_action_description?: string | null
           pipeline_stage?: string
@@ -331,6 +367,57 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: true
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string | null
+          id: string
+          order: number | null
+          parent_task_id: string | null
+          project_id: string
+          status: string | null
+          text: string
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string | null
+          id?: string
+          order?: number | null
+          parent_task_id?: string | null
+          project_id: string
+          status?: string | null
+          text: string
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string | null
+          id?: string
+          order?: number | null
+          parent_task_id?: string | null
+          project_id?: string
+          status?: string | null
+          text?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -646,7 +733,7 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-// ========= TABLE TYPE EXPORTS =========
+// Base table types
 export type Contact = Tables<'contacts'>
 export type Event = Tables<'events'>
 export type EventInvitation = Tables<'event_invitations'>
@@ -662,7 +749,7 @@ export type EventUpdate = TablesUpdate<'events'>
 export type EventInvitationUpdate = TablesUpdate<'event_invitations'>
 export type RelationshipPipelineUpdate = TablesUpdate<'relationship_pipeline'>
 
-// ========= VIP MANAGEMENT TYPES =========
+// VIP Management types
 export type VipTag = Tables<'vip_tags'>
 export type VipContactTag = Tables<'vip_contact_tags'>
 export type VipInitiative = Tables<'vip_initiatives'>
@@ -681,7 +768,7 @@ export type VipInitiativeUpdate = TablesUpdate<'vip_initiatives'>
 export type VipTaskUpdate = TablesUpdate<'vip_tasks'>
 export type VipActivityUpdate = TablesUpdate<'vip_activities'>
 
-// ========= CTO CLUB TYPES =========
+// CTO Club types
 export type CtoClubPotentialMember = Tables<'cto_club_potential_members'>
 export type CtoClubPipeline = Tables<'cto_club_pipeline'>
 
@@ -691,7 +778,7 @@ export type CtoClubPipelineInsert = TablesInsert<'cto_club_pipeline'>
 export type CtoClubPotentialMemberUpdate = TablesUpdate<'cto_club_potential_members'>
 export type CtoClubPipelineUpdate = TablesUpdate<'cto_club_pipeline'>
 
-// CTO Club Engagement Types
+// CTO Club Engagement types
 export type CtoClubEngagementInitiative = Tables<'cto_club_engagement_initiatives'>
 export type CtoClubEngagementTask = Tables<'cto_club_engagement_tasks'>
 
@@ -701,20 +788,70 @@ export type CtoClubEngagementTaskInsert = TablesInsert<'cto_club_engagement_task
 export type CtoClubEngagementInitiativeUpdate = TablesUpdate<'cto_club_engagement_initiatives'>
 export type CtoClubEngagementTaskUpdate = TablesUpdate<'cto_club_engagement_tasks'>
 
-// CTO Club Engagement Enum Types
+// BizDev types
+export type Project = Tables<'projects'>
+export type Task = Tables<'tasks'>
+
+export type ProjectInsert = TablesInsert<'projects'>
+export type TaskInsert = TablesInsert<'tasks'>
+
+export type ProjectUpdate = TablesUpdate<'projects'>
+export type TaskUpdate = TablesUpdate<'tasks'>
+
+// Enum types
 export type CtoClubInitiativeStatus = Database['public']['Enums']['cto_club_initiative_status']
 export type CtoClubTaskStatus = Database['public']['Enums']['cto_club_task_status']
 
-// ========= ENUM EXPORTS =========
+// Contact area enum
 export type ContactArea = Database['public']['Enums']['contact_area']
 
-// VIP Management Enums
+// VIP enum types
 export type VipInitiativeType = Database['public']['Enums']['vip_initiative_type']
 export type VipInitiativeStatus = Database['public']['Enums']['vip_initiative_status']
 export type VipTaskStatus = Database['public']['Enums']['vip_task_status']
 export type VipActivityType = Database['public']['Enums']['vip_activity_type']
 
-// ========= INTERFACE EXPORTS =========
+// BizDev specific enums (from constraints)
+export type ProjectPriority = 'high' | 'medium' | 'low'
+export type ProjectStatus = 'potential' | 'active' | 'on-hold' | 'completed' | 'archived'
+export type TaskStatus = 'todo' | 'doing' | 'waiting' | 'done'
+
+// BizDev specific types for detailed ratings
+export interface DetailedRatingMetric {
+  value: number | null
+  weight: number
+}
+
+export interface DetailedRatingsData {
+  revenuePotential: DetailedRatingMetric
+  insiderSupport: DetailedRatingMetric
+  strategicFitEvolve: DetailedRatingMetric
+  strategicFitVerticals: DetailedRatingMetric
+  clarityClient: DetailedRatingMetric
+  clarityUs: DetailedRatingMetric
+  effortPotentialClient: DetailedRatingMetric
+  effortExistingClient: DetailedRatingMetric
+  timingPotentialClient: DetailedRatingMetric
+  runway: number // in months
+}
+
+// Enhanced Project type with typed detailed ratings
+export interface ProjectWithRatings extends Omit<Project, 'detailed_ratings_data'> {
+  detailed_ratings_data: DetailedRatingsData | null
+}
+
+// Task with subtasks relationship
+export interface TaskWithSubtasks extends Task {
+  subtasks?: Task[]
+  parent_task?: Task | null
+}
+
+// Project with tasks
+export interface ProjectWithTasks extends ProjectWithRatings {
+  tasks: TaskWithSubtasks[]
+}
+
+// Statistics interfaces
 export interface VipStats {
   total_vips: number
   active_give_initiatives: number
@@ -728,4 +865,53 @@ export interface CtoClubStats {
   potential_members: number
   pipeline_items: number
   ready_for_next_step: number
-} 
+}
+
+export interface BizDevStats {
+  total_projects: number
+  active_projects: number
+  ian_collaboration_projects: number
+  completed_projects: number
+  total_tasks: number
+  completed_tasks: number
+  high_priority_projects: number
+}
+
+// View type for BizDev kanban board
+export interface KanbanBoardData {
+  todo: TaskWithSubtasks[]
+  doing: TaskWithSubtasks[]
+  waiting: TaskWithSubtasks[]
+  done: TaskWithSubtasks[]
+}
+
+export const Constants = {
+  public: {
+    Enums: {
+      contact_area: ["engineering", "founders", "product"],
+      cto_club_initiative_status: [
+        "active",
+        "on_hold",
+        "completed",
+        "archived",
+      ],
+      cto_club_task_status: ["to_do", "in_progress", "done", "cancelled"],
+      vip_activity_type: [
+        "meeting",
+        "call",
+        "email",
+        "event",
+        "info_share",
+        "future_touchpoint",
+      ],
+      vip_initiative_status: ["active", "on_hold", "completed", "archived"],
+      vip_initiative_type: ["give", "ask"],
+      vip_task_status: ["to_do", "in_progress", "done", "cancelled"],
+    },
+    BizDev: {
+      project_priorities: ["high", "medium", "low"],
+      project_statuses: ["potential", "active", "on-hold", "completed", "archived"],
+      task_statuses: ["todo", "doing", "waiting", "done"],
+    },
+  },
+} as const 

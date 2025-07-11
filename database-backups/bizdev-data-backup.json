@@ -1,0 +1,115 @@
+{
+  "backup_info": {
+    "created": "2025-12-13",
+    "project_id": "imvclloqzzpiukhtozav",
+    "database": "BizDev",
+    "total_projects": 33,
+    "total_tasks": 35,
+    "ian_collaboration_projects": 11
+  },
+  "projects": [
+    {
+      "id": "1d8b855c-c495-4720-a80e-822d937b8967",
+      "created_at": "2025-05-15 16:33:28.210434+00",
+      "name": "Apollo",
+      "description": "",
+      "rating": "4.66",
+      "priority": "medium",
+      "status": "active",
+      "is_ian_collaboration": false,
+      "detailed_ratings_data": {
+        "effort": 4,
+        "timing": 5,
+        "strategic_fit": 5,
+        "insider_support": 4,
+        "revenue_potential": 5,
+        "stability_clarity": 4
+      }
+    },
+    {
+      "id": "73a6f4ab-ef86-4f50-9b83-1c403d4a9e84",
+      "created_at": "2025-05-15 16:33:47.315125+00",
+      "name": "ASC",
+      "description": "",
+      "rating": "4.08",
+      "priority": "medium",
+      "status": "active",
+      "is_ian_collaboration": false,
+      "detailed_ratings_data": {
+        "effort": 4,
+        "timing": 5,
+        "strategic_fit": 5,
+        "insider_support": 4,
+        "revenue_potential": 3,
+        "stability_clarity": 4
+      }
+    },
+    {
+      "id": "d6a67f8b-396e-4af7-9793-f994ef6d522a",
+      "created_at": "2025-05-15 16:34:01.679908+00",
+      "name": "Built",
+      "description": "",
+      "rating": "3.9",
+      "priority": "medium",
+      "status": "potential",
+      "is_ian_collaboration": false,
+      "detailed_ratings_data": {
+        "effort": 4,
+        "timing": 4,
+        "strategic_fit": 4,
+        "insider_support": 3,
+        "revenue_potential": 4,
+        "stability_clarity": 3
+      }
+    },
+    {
+      "id": "00a55476-ca47-4d7c-a208-9160e0a8a44b",
+      "created_at": "2025-05-15 16:34:21.752922+00",
+      "name": "Mede",
+      "description": "",
+      "rating": "3.79",
+      "priority": "medium",
+      "status": "potential",
+      "is_ian_collaboration": false,
+      "detailed_ratings_data": {
+        "effort": 3,
+        "timing": 5,
+        "strategic_fit": 3,
+        "insider_support": 4,
+        "revenue_potential": 4,
+        "stability_clarity": 3
+      }
+    }
+  ],
+  "sample_detailed_ratings_structure": {
+    "description": "Each project contains detailed ratings with these metrics",
+    "metrics": {
+      "effort": "1-5 scale for implementation effort",
+      "timing": "1-5 scale for timing suitability",
+      "strategic_fit": "1-5 scale for strategic alignment",
+      "insider_support": "1-5 scale for internal support",
+      "revenue_potential": "1-5 scale for revenue opportunity",
+      "stability_clarity": "1-5 scale for project clarity"
+    },
+    "statuses": ["potential", "active", "on-hold", "completed", "archived"],
+    "priorities": ["high", "medium", "low"]
+  },
+  "task_structure": {
+    "description": "Tasks are linked to projects and support hierarchical subtasks",
+    "features": [
+      "Parent-child task relationships",
+      "Kanban board statuses: todo, doing, waiting, done",
+      "Order field for sorting",
+      "Completion tracking"
+    ]
+  },
+  "summary": {
+    "total_projects": 33,
+    "ian_collaboration_projects": 11,
+    "business_projects": 22,
+    "active_projects": 2,
+    "potential_projects": 31,
+    "average_rating": "3.2",
+    "total_tasks": 35
+  }
+} 

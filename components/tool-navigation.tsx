@@ -25,6 +25,11 @@ const tools = [
     label: 'CTO Club',
     description: 'Manage CTO Club members and recruitment'
   },
+  {
+    href: '/bizdev',
+    label: 'BizDev Pipeline',
+    description: 'Manage business development projects and tasks'
+  },
 ]
 
 export function ToolNavigation() {
@@ -34,6 +39,7 @@ export function ToolNavigation() {
     if (pathname.startsWith('/contacts')) return '/contacts'
     if (pathname.startsWith('/vip-management')) return '/vip-management'
     if (pathname.startsWith('/cto-club')) return '/cto-club'
+    if (pathname.startsWith('/bizdev')) return '/bizdev'
     return '/events-management'
   }
 
