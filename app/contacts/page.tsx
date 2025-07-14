@@ -112,6 +112,7 @@ export default function ContactsPage() {
             <BarChart3 className="h-4 w-4" />
             Dashboard
           </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="contacts" className="mt-6 space-y-6">
@@ -252,6 +253,8 @@ export default function ContactsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+
       </Tabs>
 
       {/* Add Contact Dialog - uses internal state management */}

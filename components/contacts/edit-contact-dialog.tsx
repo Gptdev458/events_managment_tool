@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ContactTypeSelector } from '@/components/ui/contact-type-selector'
+import { CustomTypesDialog } from '@/components/contacts/custom-types-dialog'
 import { updateContact, deleteContact } from '@/lib/actions'
-import { CONTACT_TYPES } from '@/lib/constants'
 import { CONTACT_AREA_OPTIONS, type ContactArea } from '@/lib/contact-area-utils'
 import { Contact } from '@/lib/supabase'
 import { Edit, Loader2, Trash2 } from 'lucide-react'
@@ -325,21 +326,21 @@ export function EditContactDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Contact Type</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value === 'none' ? null : value)} value={field.value || 'none'}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select contact type (optional)" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {CONTACT_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <ContactTypeSelector
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                placeholder="Select contact type (optional)"
+                              />
+                            </div>
+                            <CustomTypesDialog onTypesChanged={() => {
+                              // Optionally refresh the ContactTypeSelector options here
+                              // The ContactTypeSelector should automatically refresh its options
+                            }} />
+                          </div>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

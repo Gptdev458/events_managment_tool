@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { ContactTypeSelector } from '@/components/ui/contact-type-selector'
 import { Contact } from '@/lib/supabase'
-import { CONTACT_TYPES, PIPELINE_STAGES } from '@/lib/constants'
+import { PIPELINE_STAGES } from '@/lib/constants'
 import { CONTACT_AREA_OPTIONS, type ContactArea } from '@/lib/contact-area-utils'
 import { ContactBusinessLogic } from '@/lib/business-logic'
 import {
@@ -42,7 +43,7 @@ export function BulkEditContactsDialog({
   onSuccess
 }: BulkEditContactsDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [contactType, setContactType] = useState('')
+  const [contactType, setContactType] = useState<string | null>('')
   const [isCtoClub, setIsCtoClub] = useState(false)
   const [company, setCompany] = useState('')
   const [area, setArea] = useState<ContactArea>(null)
@@ -204,18 +205,12 @@ export function BulkEditContactsDialog({
             {operationType === 'contact-type' && (
               <div className="space-y-2">
                 <Label htmlFor="contactType">New Contact Type</Label>
-                <Select value={contactType} onValueChange={setContactType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select contact type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONTACT_TYPES.map(type => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ContactTypeSelector
+                  value={contactType}
+                  onValueChange={(value) => setContactType(value || '')}
+                  placeholder="Select contact type"
+                  includeNoneOption={false}
+                />
               </div>
             )}
 

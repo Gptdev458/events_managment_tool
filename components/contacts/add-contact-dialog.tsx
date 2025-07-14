@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { createContact } from '@/lib/actions'
 import { CONTACT_TYPES } from '@/lib/constants'
 import { CONTACT_AREA_OPTIONS, type ContactArea } from '@/lib/contact-area-utils'
+import { ContactTypeSelector } from '@/components/ui/contact-type-selector'
 import { Plus, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 
@@ -191,21 +192,13 @@ export function AddContactDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contact Type</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(value === 'none' ? null : value)} value={field.value || 'none'}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select contact type (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {CONTACT_TYPES.map(type => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ContactTypeSelector
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Select contact type (optional)"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
