@@ -193,14 +193,14 @@ export async function updateContact(id: string, formData: FormData) {
       .single()
 
     if (error) {
-      console.error('Update contact error:', error)
+      logger.databaseError('update contact', new Error(error.message))
       throw new Error(error.message)
     }
 
     revalidatePath('/contacts')
     return { success: true, data }
   } catch (error) {
-    console.error('Update contact action error:', error)
+    logger.serverActionError('updateContact', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to update contact' 
@@ -216,14 +216,14 @@ export async function deleteContact(id: string) {
       .eq('id', id)
 
     if (error) {
-      console.error('Delete contact error:', error)
+      logger.databaseError('delete contact', new Error(error.message))
       throw new Error(error.message)
     }
 
     revalidatePath('/contacts')
     return { success: true }
   } catch (error) {
-    console.error('Delete contact action error:', error)
+    logger.serverActionError('deleteContact', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to delete contact' 
@@ -253,14 +253,14 @@ export async function createEvent(formData: FormData) {
       .single()
 
     if (error) {
-      console.error('Create event error:', error)
+      logger.databaseError('create event', new Error(error.message))
       throw new Error(error.message)
     }
 
     revalidatePath('/events')
     return { success: true, data }
   } catch (error) {
-    console.error('Create event action error:', error)
+    logger.serverActionError('createEvent', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to create event' 
@@ -290,14 +290,14 @@ export async function updateEvent(id: string, formData: FormData) {
       .single()
 
     if (error) {
-      console.error('Update event error:', error)
+      logger.databaseError('update event', new Error(error.message))
       throw new Error(error.message)
     }
 
     revalidatePath('/events')
     return { success: true, data }
   } catch (error) {
-    console.error('Update event action error:', error)
+    logger.serverActionError('updateEvent', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to update event' 
@@ -313,14 +313,14 @@ export async function deleteEvent(id: string) {
       .eq('id', id)
 
     if (error) {
-      console.error('Delete event error:', error)
+      logger.databaseError('delete event', new Error(error.message))
       throw new Error(error.message)
     }
 
     revalidatePath('/events')
     return { success: true }
   } catch (error) {
-    console.error('Delete event action error:', error)
+    logger.serverActionError('deleteEvent', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to delete event' 
@@ -337,13 +337,13 @@ export async function getContacts() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Fetch contacts error:', error)
+      logger.databaseError('fetch contacts', new Error(error.message))
       throw new Error(error.message)
     }
 
     return { success: true, data: data || [] }
   } catch (error) {
-    console.error('Get contacts action error:', error)
+    logger.serverActionError('getContacts', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       data: [], 
@@ -360,13 +360,13 @@ export async function getEvents() {
       .order('event_date', { ascending: false })
 
     if (error) {
-      console.error('Get events error:', error)
+      logger.databaseError('get events', new Error(error.message))
       throw new Error(error.message)
     }
 
     return { success: true, data: data || [] }
   } catch (error) {
-    console.error('Get events action error:', error)
+    logger.serverActionError('getEvents', error instanceof Error ? error : new Error('Unknown error'))
     return { 
       success: false, 
       data: [], 

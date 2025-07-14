@@ -152,8 +152,6 @@ export async function updatePipelineItem(
     notes?: string
   }
 ): Promise<void> {
-  console.log('updatePipelineItem called with:', { id, updates })
-  
   // Clean up the updates object to ensure proper data types
   const cleanUpdates: any = {}
   
@@ -172,8 +170,6 @@ export async function updatePipelineItem(
   if (updates.notes !== undefined) {
     cleanUpdates.notes = updates.notes || null
   }
-  
-  console.log('Cleaned updates:', cleanUpdates)
 
   const { error } = await supabase
     .from('cto_club_pipeline')

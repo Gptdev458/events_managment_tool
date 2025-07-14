@@ -360,7 +360,6 @@ export async function getVipDataBulk(contactId: string): Promise<{
   allTasks: VipTask[]
 }> {
   try {
-    console.log('getVipDataBulk called for contactId:', contactId)
     const [initiatives, activities, tags, allTasks] = await Promise.all([
       supabase
         .from('vip_initiatives')
@@ -429,7 +428,6 @@ export async function getVipDataBulk(contactId: string): Promise<{
       allTasks: allTasks.data || []
     }
     
-    console.log('getVipDataBulk result:', result)
     return result
   } catch (error) {
     console.error('Error fetching bulk VIP data:', error)

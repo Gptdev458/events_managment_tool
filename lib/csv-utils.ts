@@ -296,10 +296,6 @@ export const CSVImport = {
       }
     })
 
-    // Debug logging
-    console.log('CSV Headers:', headers)
-    console.log('Header Map:', headerMap)
-
     const validContacts: Contact[] = []
     const errors: { row: number; errors: string[] }[] = []
 
@@ -579,10 +575,6 @@ export function parseCSVToContacts(csvContent: string): {
       headerMap[index] = 'general_notes'
     }
   })
-
-  // Debug logging
-  console.log('CSV Headers:', headers)
-  console.log('Header Map:', headerMap)
 
   const validContacts: Contact[] = []
   const errors: { row: number; errors: string[] }[] = []

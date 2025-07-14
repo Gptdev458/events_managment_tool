@@ -5,6 +5,7 @@ export const CONTACT_TYPES = [
   { value: 'host', label: 'Host' },
   { value: 'established_connection', label: 'Established Connection' },
   { value: 'vip', label: 'VIP' },
+  { value: 'potential_cto_club_member', label: 'Potential CTO Club Member' },
   { value: 'cto_club_member', label: 'CTO Club Member' },
 ] as const
 
