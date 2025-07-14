@@ -370,6 +370,7 @@ export type Database = {
         Row: {
           contact_id: string
           id: number
+          last_action_date: string | null
           next_action_date: string | null
           next_action_description: string | null
           pipeline_stage: string
@@ -377,13 +378,15 @@ export type Database = {
         Insert: {
           contact_id: string
           id?: never
-          next_action_date: string | null
-          next_action_description: string | null
+          last_action_date?: string | null
+          next_action_date?: string | null
+          next_action_description?: string | null
           pipeline_stage: string
         }
         Update: {
           contact_id?: string
           id?: never
+          last_action_date?: string | null
           next_action_date?: string | null
           next_action_description?: string | null
           pipeline_stage?: string
@@ -770,10 +773,38 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
+export const Constants = {
+  public: {
+    Enums: {
+      contact_area: ["engineering", "founders", "product"],
+      cto_club_initiative_status: [
+        "active",
+        "on_hold",
+        "completed",
+        "archived",
+      ],
+      cto_club_task_status: ["to_do", "in_progress", "done", "cancelled"],
+      vip_activity_type: [
+        "meeting",
+        "call",
+        "email",
+        "event",
+        "info_share",
+        "future_touchpoint",
+      ],
+      vip_initiative_status: ["active", "on_hold", "completed", "archived"],
+      vip_initiative_type: ["give", "ask"],
+      vip_task_status: ["to_do", "in_progress", "done", "cancelled"],
+    },
+  },
+} as const
+
+// Type aliases for convenience
+export type Contact = Database['public']['Tables']['contacts']['Row']
+export type Event = Database['public']['Tables']['events']['Row']
+export type EventInvitation = Database['public']['Tables']['event_invitations']['Row']
+
 // Base table types
-export type Contact = Tables<'contacts'>
-export type Event = Tables<'events'>
-export type EventInvitation = Tables<'event_invitations'>
 export type RelationshipPipeline = Tables<'relationship_pipeline'>
 
 export type ContactInsert = TablesInsert<'contacts'>
@@ -920,30 +951,4 @@ export interface KanbanBoardData {
   doing: TaskWithSubtasks[]
   waiting: TaskWithSubtasks[]
   done: TaskWithSubtasks[]
-}
-
-export const Constants = {
-  public: {
-    Enums: {
-      contact_area: ["engineering", "founders", "product"],
-      cto_club_initiative_status: [
-        "active",
-        "on_hold",
-        "completed",
-        "archived",
-      ],
-      cto_club_task_status: ["to_do", "in_progress", "done", "cancelled"],
-      vip_activity_type: [
-        "meeting",
-        "call",
-        "email",
-        "event",
-        "info_share",
-        "future_touchpoint",
-      ],
-      vip_initiative_status: ["active", "on_hold", "completed", "archived"],
-      vip_initiative_type: ["give", "ask"],
-      vip_task_status: ["to_do", "in_progress", "done", "cancelled"],
-    },
-  },
-} as const 
+} 
