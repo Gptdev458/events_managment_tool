@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { InlineDateEditor } from "@/components/ui/inline-date-editor"
+import { InlineTextEditor } from "@/components/ui/inline-text-editor"
 import { 
   Plus, 
   Mail, 
@@ -144,7 +145,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
   }
 
   // Add handler for inline updates with auto-status detection
-  const handleInlineUpdate = async (itemId: number, field: 'next_action' | 'next_action_date' | 'last_action_date', value: string) => {
+  const handleInlineUpdate = async (itemId: number, field: 'next_action' | 'next_action_date' | 'last_action_date' | 'notes', value: string) => {
     const item = pipelineItems.find(p => p.id === itemId)
     if (!item) return
 
@@ -170,7 +171,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
         next_action: field === 'next_action' ? value : (item.next_action || ''),
         next_action_date: field === 'next_action_date' ? value : (item.next_action_date || ''),
         last_action_date: field === 'last_action_date' ? value : (item.last_action_date || ''),
-        notes: item.notes || ''
+        notes: field === 'notes' ? value : (item.notes || '')
       }
 
       console.log('Sending update with values:', updatedValues)
@@ -339,10 +340,12 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
                   />
                 </TableCell>
                 <TableCell>
-                  <div className="max-w-[150px]">
-                    <p className="text-sm text-gray-600 truncate">
-                      {item.notes || 'No notes'}
-                    </p>
+                  <div className="max-w-[200px]">
+                    <InlineTextEditor
+                      value={item.notes}
+                      onSave={(value) => handleInlineUpdate(item.id, 'notes', value)}
+                      placeholder="Click to add notes..."
+                    />
                   </div>
                 </TableCell>
                 <TableCell>

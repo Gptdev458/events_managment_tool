@@ -46,11 +46,9 @@ export function InlineDateEditor({
   }
 
   const handleSave = async () => {
-    if (!editValue) return
-    
     setIsSaving(true)
     try {
-      await onSave(editValue)
+      await onSave(editValue) // Allow empty values to be saved
       setIsEditing(false)
     } catch (error) {
       console.error('Failed to save:', error)
@@ -140,7 +138,7 @@ export function InlineDateEditor({
           variant="default"
           size="sm"
           onClick={handleSave}
-          disabled={isSaving || !editValue}
+          disabled={isSaving}
           className="h-8 px-3 text-xs"
         >
           <Check className="h-3 w-3 mr-1" />
