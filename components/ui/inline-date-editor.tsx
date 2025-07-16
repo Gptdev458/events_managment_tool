@@ -10,13 +10,15 @@ interface InlineDateEditorProps {
   onSave: (value: string) => Promise<void>
   onCancel?: () => void
   className?: string
+  allowPastDates?: boolean
 }
 
 export function InlineDateEditor({ 
   value, 
   onSave, 
   onCancel,
-  className = ""
+  className = "",
+  allowPastDates = false
 }: InlineDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value ? new Date(value).toISOString().split('T')[0] : '')
@@ -71,11 +73,17 @@ export function InlineDateEditor({
     }
   }
 
-  // Get tomorrow as minimum date
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const minDate = tomorrow.toISOString().split('T')[0]
+  // Get minimum date - either tomorrow for future dates or no minimum for past dates
+  const getMinDate = () => {
+    if (allowPastDates) {
+      return undefined // No minimum date restriction
+    }
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toISOString().split('T')[0]
+  }
 
+  const minDate = getMinDate()
   const overdue = isOverdue(value)
 
   if (!isEditing) {

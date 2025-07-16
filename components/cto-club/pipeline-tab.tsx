@@ -337,6 +337,7 @@ export function PipelineTab({ pipelineItems, availableContacts }: PipelineTabPro
                   <InlineDateEditor
                     value={item.last_action_date}
                     onSave={(value) => handleInlineUpdate(item.id, 'last_action_date', value)}
+                    allowPastDates={true}
                   />
                 </TableCell>
                 <TableCell>
