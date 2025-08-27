@@ -426,12 +426,90 @@ export async function addToPipeline(formData: FormData) {
     }
 
     revalidatePath('/pipeline')
+    revalidatePath('/events-management/pipeline')
     return { success: true, data }
   } catch (error) {
     console.error('Add to pipeline action error:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to add contact to pipeline' 
+    }
+  }
+}
+
+export async function bulkAddToPipeline(formData: FormData) {
+  try {
+    const contactIds = formData.get('contact_ids') as string
+    const pipelineStage = formData.get('pipeline_stage') as string
+    const nextActionDescription = formData.get('next_action_description') as string
+    const nextActionDate = formData.get('next_action_date') as string
+    const lastActionDate = formData.get('last_action_date') as string || undefined
+
+    if (!contactIds) {
+      throw new Error('No contacts selected')
+    }
+
+    const contactIdArray = contactIds.split(',').filter(id => id.trim())
+    
+    if (contactIdArray.length === 0) {
+      throw new Error('No valid contacts selected')
+    }
+
+    // Prepare data for bulk insert
+    const pipelineEntries = contactIdArray.map(contactId => {
+      const rawData = {
+        contact_id: contactId.trim(),
+        pipeline_stage: pipelineStage,
+        next_action_description: nextActionDescription,
+        next_action_date: nextActionDate,
+        last_action_date: lastActionDate,
+      }
+      return pipelineSchema.parse(rawData)
+    })
+
+    // Check for existing pipeline entries to avoid duplicates
+    const { data: existingEntries } = await supabase
+      .from('relationship_pipeline')
+      .select('contact_id')
+      .in('contact_id', contactIdArray)
+
+    const existingContactIds = new Set(existingEntries?.map(entry => entry.contact_id) || [])
+    const newEntries = pipelineEntries.filter(entry => !existingContactIds.has(entry.contact_id))
+
+    if (newEntries.length === 0) {
+      return {
+        success: false,
+        error: 'All selected contacts are already in the pipeline'
+      }
+    }
+
+    // Bulk insert new entries
+    const { data, error } = await supabase
+      .from('relationship_pipeline')
+      .insert(newEntries as RelationshipPipelineInsert[])
+      .select()
+
+    if (error) {
+      console.error('Bulk add to pipeline error:', error)
+      throw new Error(error.message)
+    }
+
+    revalidatePath('/pipeline')
+    revalidatePath('/events-management/pipeline')
+    
+    const skippedCount = contactIdArray.length - newEntries.length
+    const addedCount = newEntries.length
+
+    return { 
+      success: true, 
+      data,
+      message: `Added ${addedCount} contact${addedCount !== 1 ? 's' : ''} to pipeline${skippedCount > 0 ? ` (${skippedCount} already in pipeline)` : ''}`
+    }
+  } catch (error) {
+    console.error('Bulk add to pipeline action error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to add contacts to pipeline' 
     }
   }
 }
@@ -1164,71 +1242,6 @@ export async function bulkUpdateContactArea(contactIds: string[], area: ContactA
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update contact area'
-    }
-  }
-}
-
-export async function bulkAddToPipeline(contactIds: string[], pipelineData: {
-  pipeline_stage: string
-  next_action_description: string
-  next_action_date: string
-}) {
-  try {
-    if (contactIds.length === 0) {
-      return { success: false, error: 'No contacts selected' }
-    }
-
-    // Check which contacts are already in pipeline
-    const { data: existingPipeline } = await supabase
-      .from('relationship_pipeline')
-      .select('contact_id')
-      .in('contact_id', contactIds)
-
-    const existingContactIds = existingPipeline?.map(p => p.contact_id) || []
-    const newContactIds = contactIds.filter(id => !existingContactIds.includes(id))
-
-    if (newContactIds.length === 0) {
-      return { 
-        success: false, 
-        error: 'All selected contacts are already in the pipeline' 
-      }
-    }
-
-    // Add new contacts to pipeline
-    const pipelineInserts = newContactIds.map(contactId => ({
-      contact_id: contactId,
-      ...pipelineData
-    }))
-
-    const { data, error } = await supabase
-      .from('relationship_pipeline')
-      .insert(pipelineInserts)
-      .select('id')
-
-    if (error) {
-      console.error('Bulk add to pipeline error:', error)
-      throw new Error(error.message)
-    }
-
-    revalidatePath('/contacts')
-    revalidatePath('/pipeline')
-
-    const skippedCount = contactIds.length - newContactIds.length
-    let message = `Added ${newContactIds.length} contact${newContactIds.length !== 1 ? 's' : ''} to pipeline`
-    if (skippedCount > 0) {
-      message += ` (${skippedCount} already in pipeline)`
-    }
-
-    return { 
-      success: true, 
-      data,
-      message
-    }
-  } catch (error) {
-    console.error('Bulk add to pipeline action error:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to add contacts to pipeline' 
     }
   }
 }

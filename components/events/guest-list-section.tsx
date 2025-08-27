@@ -35,7 +35,8 @@ import {
   Users,
   CheckSquare,
   Square,
-  Edit
+  Edit,
+  TrendingUp
 } from 'lucide-react'
 import { INVITATION_STATUSES } from '@/lib/constants'
 import { Contact } from '@/lib/supabase'
@@ -43,6 +44,7 @@ import { ContactBusinessLogic } from '@/lib/business-logic'
 import { AddGuestDialog } from './add-guest-dialog'
 import { InvitationActionsDropdown } from './invitation-actions-dropdown'
 import { BulkEditDialog, type BulkEditMode } from './bulk-edit-dialog'
+import { BulkAddToPipelineDialog } from './bulk-add-to-pipeline-dialog'
 import { EditContactDialog } from '@/components/contacts/edit-contact-dialog'
 
 interface Invitation {
@@ -86,6 +88,9 @@ export function GuestListSection({
   const [selectedInvitationIds, setSelectedInvitationIds] = useState<number[]>([])
   const [showBulkEditDialog, setShowBulkEditDialog] = useState(false)
   const [bulkEditMode, setBulkEditMode] = useState<BulkEditMode>('status')
+  
+  // Bulk add to pipeline state
+  const [showBulkAddToPipelineDialog, setShowBulkAddToPipelineDialog] = useState(false)
 
 
 
@@ -154,6 +159,25 @@ export function GuestListSection({
 
   const handleBulkEditSuccess = () => {
     setSelectedInvitationIds([])
+  }
+
+  const handleBulkAddToPipeline = () => {
+    setShowBulkAddToPipelineDialog(true)
+  }
+
+  const handleBulkAddToPipelineSuccess = () => {
+    setSelectedInvitationIds([])
+    setShowBulkAddToPipelineDialog(false)
+  }
+
+  // Get selected contacts for pipeline dialog
+  const getSelectedContacts = () => {
+    return selectedInvitationIds
+      .map(id => {
+        const invitation = invitations.find(inv => inv.id === id)
+        return invitation?.contacts
+      })
+      .filter(Boolean) as Contact[]
   }
 
   const getSelectedGuestNames = () => {
@@ -231,6 +255,15 @@ export function GuestListSection({
               </span>
             </div>
             <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="default"
+                onClick={handleBulkAddToPipeline}
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <TrendingUp className="h-3 w-3" />
+                Add to Pipeline
+              </Button>
               <Button 
                 size="sm" 
                 variant="outline"
@@ -451,7 +484,13 @@ export function GuestListSection({
         onSuccess={handleBulkEditSuccess}
       />
 
-
+      {/* Bulk Add to Pipeline Dialog */}
+      <BulkAddToPipelineDialog
+        open={showBulkAddToPipelineDialog}
+        onOpenChange={setShowBulkAddToPipelineDialog}
+        selectedContacts={getSelectedContacts()}
+        onSuccess={handleBulkAddToPipelineSuccess}
+      />
     </Card>
   )
 } 
