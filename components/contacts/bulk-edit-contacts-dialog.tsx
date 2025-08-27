@@ -96,11 +96,12 @@ export function BulkEditContactsDialog({
             setError('Please fill in all pipeline fields')
             return
           }
-          result = await bulkAddToPipeline(contactIds, {
-            pipeline_stage: pipelineStage,
-            next_action_description: nextActionDescription,
-            next_action_date: nextActionDate
-          })
+          const formData = new FormData()
+          formData.append('contact_ids', contactIds.join(','))
+          formData.append('pipeline_stage', pipelineStage)
+          formData.append('next_action_description', nextActionDescription)
+          formData.append('next_action_date', nextActionDate)
+          result = await bulkAddToPipeline(formData)
           break
 
         case 'delete':
