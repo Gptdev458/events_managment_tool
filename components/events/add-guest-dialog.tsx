@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -534,9 +535,44 @@ export function AddGuestDialog({
             </div>
           </div>
         </form>
+
+        {/* Footer with prominent action buttons */}
+        <DialogFooter className="border-t pt-4">
+          <div className="flex items-center justify-between w-full">
+            <div className="text-sm text-muted-foreground">
+              {selectedContactIds.length > 0 ? (
+                <span>
+                  <strong>{selectedContactIds.length}</strong> contact{selectedContactIds.length !== 1 ? 's' : ''} selected
+                </span>
+              ) : (
+                <span>No contacts selected</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isPending || selectedContactIds.length === 0}
+                onClick={handleSubmit}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Adding Guests...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add {selectedContactIds.length} Guest{selectedContactIds.length !== 1 ? 's' : ''}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
       </DialogContent>
-
-
     </Dialog>
   )
 } 
