@@ -539,6 +539,7 @@ export async function updatePipelineStage(id: number, formData: FormData) {
     }
 
     revalidatePath('/pipeline')
+    revalidatePath('/events-management/pipeline')
     return { success: true, data }
   } catch (error) {
     console.error('Update pipeline action error:', error)
@@ -562,6 +563,7 @@ export async function removeFromPipeline(id: number) {
     }
 
     revalidatePath('/pipeline')
+    revalidatePath('/events-management/pipeline')
     return { success: true }
   } catch (error) {
     console.error('Remove from pipeline action error:', error)

@@ -131,31 +131,47 @@ export function AddContactDialog() {
               )}
             />
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="john@example.com (optional)"
-              />
-              <p className="text-sm text-muted-foreground">
-                Email is optional but recommended for communication
-              </p>
-            </div>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="john@example.com (optional)"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Email is optional but recommended for communication
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
-            <div className="space-y-2">
-              <Label htmlFor="additional_emails">Additional Emails</Label>
-              <Input
-                id="additional_emails"
-                name="additional_emails"
-                type="text"
-                placeholder="email2@example.com, email3@example.com"
-              />
-              <p className="text-sm text-muted-foreground">
-                Separate multiple emails with commas
-              </p>
-            </div>
+            <FormField
+              control={form.control}
+              name="additional_emails"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Additional Emails</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      placeholder="email2@example.com, email3@example.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Separate multiple emails with commas
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
